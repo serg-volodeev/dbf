@@ -36,3 +36,13 @@ func (h *header) setModDate(d time.Time) {
 	h.ModMonth = byte(d.Month())
 	h.ModDay = byte(d.Day())
 }
+
+// Field count
+
+func (h *header) fieldCount() int {
+	return (int(h.DataOffset) - headerSize - 1) / fieldSize
+}
+
+func (h *header) setFieldCount(count int) {
+	h.DataOffset = uint16(count*fieldSize + headerSize + 1)
+}
