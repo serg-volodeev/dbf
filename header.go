@@ -1,6 +1,11 @@
 package xbase
 
-import "time"
+import (
+	"encoding/binary"
+	"fmt"
+	"io"
+	"time"
+)
 
 type header struct {
 	Id         byte
@@ -45,4 +50,30 @@ func (h *header) fieldCount() int {
 
 func (h *header) setFieldCount(count int) {
 	h.DataOffset = uint16(count*fieldSize + headerSize + 1)
+}
+
+// Read/write
+
+func (h *header) read(reader io.Reader) error {
+	if err := binary.Read(reader, binary.LittleEndian, h); err != nil {
+		return err
+	}
+	if h.Id != dbfId {
+		return fmt.Errorf("not DBF file")
+	}
+	return nil
+}
+
+func (h *header) write(writer io.Writer) error {
+	return binary.Write(writer, binary.LittleEndian, h)
+}
+
+// Code page
+
+func (h *header) codePage() int {
+	return pageByCode(h.CP)
+}
+
+func (h *header) setCodePage(cp int) {
+	h.CP = codeByPage(cp)
 }
