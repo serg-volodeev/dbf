@@ -3,6 +3,7 @@ package xbase
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -167,4 +168,53 @@ func TestFieldBuffer(t *testing.T) {
 
 	f.setBuffer(recBuf, "F")
 	require.Equal(t, []byte("F"), f.buffer(recBuf))
+}
+
+// Get value
+
+func TestFieldStringValue(t *testing.T) {
+	f, _ := newField("Name", "C", 5, 0)
+	f.Offset = 3
+	recBuf := []byte("   Abc    ")
+	v, err := f.stringValue(recBuf, nil)
+	require.NoError(t, err)
+	require.Equal(t, "Abc", v)
+}
+
+func TestFieldBoolValue(t *testing.T) {
+	f, _ := newField("Name", "L", 1, 0)
+	f.Offset = 3
+	recBuf := []byte("   T    ")
+	v, err := f.boolValue(recBuf)
+	require.NoError(t, err)
+	require.Equal(t, true, v)
+}
+
+func TestFieldDateValue(t *testing.T) {
+	f, _ := newField("Name", "D", 8, 0)
+	f.Offset = 3
+	recBuf := []byte("   20200923    ")
+
+	d := time.Date(2020, 9, 23, 0, 0, 0, 0, time.UTC)
+	v, err := f.dateValue(recBuf)
+	require.NoError(t, err)
+	require.Equal(t, d, v)
+}
+
+func TestFieldIntValue(t *testing.T) {
+	f, _ := newField("Name", "N", 8, 0)
+	f.Offset = 3
+	recBuf := []byte("      -2020    ")
+	v, err := f.intValue(recBuf)
+	require.NoError(t, err)
+	require.Equal(t, int64(-2020), v)
+}
+
+func TestFieldFloatValue(t *testing.T) {
+	f, _ := newField("Name", "N", 8, 2)
+	f.Offset = 3
+	recBuf := []byte("     -20.21    ")
+	v, err := f.floatValue(recBuf)
+	require.NoError(t, err)
+	require.Equal(t, float64(-20.21), v)
 }
