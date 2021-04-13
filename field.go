@@ -257,3 +257,70 @@ func (f *field) floatValue(recBuf []byte) (float64, error) {
 	}
 	return strconv.ParseFloat(s, 64)
 }
+
+// Set value
+
+func (f *field) setStringValue(recBuf []byte, value string, enc *encoding.Encoder) error {
+	if err := f.checkType('C'); err != nil {
+		return err
+	}
+	if enc != nil && !isASCII(value) {
+		s, err := enc.String(value)
+		if err != nil {
+			return err
+		}
+		value = s
+	}
+	if err := f.checkLen(value); err != nil {
+		return err
+	}
+	f.setBuffer(recBuf, padRight(value, int(f.Len)))
+	return nil
+}
+
+func (f *field) setBoolValue(recBuf []byte, value bool) error {
+	if err := f.checkType('L'); err != nil {
+		return err
+	}
+	s := "F"
+	if value {
+		s = "T"
+	}
+	f.setBuffer(recBuf, s)
+	return nil
+}
+
+func (f *field) setDateValue(recBuf []byte, value time.Time) error {
+	if err := f.checkType('D'); err != nil {
+		return err
+	}
+	f.setBuffer(recBuf, value.Format("20060102"))
+	return nil
+}
+
+func (f *field) setIntValue(recBuf []byte, value int64) error {
+	if err := f.checkType('N'); err != nil {
+		return err
+	}
+	s := strconv.FormatInt(value, 10)
+	if f.Dec > 0 {
+		s += "." + strings.Repeat("0", int(f.Dec))
+	}
+	if err := f.checkLen(s); err != nil {
+		return err
+	}
+	f.setBuffer(recBuf, padLeft(s, int(f.Len)))
+	return nil
+}
+
+func (f *field) setFloatValue(recBuf []byte, value float64) error {
+	if err := f.checkType('N'); err != nil {
+		return err
+	}
+	s := strconv.FormatFloat(value, 'f', int(f.Dec), 64)
+	if err := f.checkLen(s); err != nil {
+		return err
+	}
+	f.setBuffer(recBuf, padLeft(s, int(f.Len)))
+	return nil
+}
