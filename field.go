@@ -31,6 +31,26 @@ func (f *field) name() string {
 	return string(f.Name[:i])
 }
 
+// New field
+
+func newField(name string, typ string, length, dec int) (*field, error) {
+	f := &field{}
+	// do not change the call order
+	if err := f.setName(name); err != nil {
+		return nil, err
+	}
+	if err := f.setType(typ); err != nil {
+		return nil, err
+	}
+	if err := f.setLen(length); err != nil {
+		return nil, err
+	}
+	if err := f.setDec(dec); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
 func (f *field) setName(name string) error {
 	name = strings.ToUpper(strings.TrimSpace(name))
 	if len(name) == 0 {

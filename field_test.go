@@ -83,3 +83,12 @@ func TestFieldSetDec(t *testing.T) {
 	err = f.setDec(4)
 	require.Error(t, err)
 }
+
+func TestNewField(t *testing.T) {
+	f, err := newField("Price", "N", 12, 2)
+	require.NoError(t, err)
+	require.Equal(t, "PRICE", f.name())
+	require.Equal(t, byte('N'), f.Type)
+	require.Equal(t, byte(12), f.Len)
+	require.Equal(t, byte(2), f.Dec)
+}
