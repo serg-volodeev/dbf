@@ -156,3 +156,13 @@ func (f *field) write(writer io.Writer) error {
 	defer func() { f.Offset = tmp }()
 	return binary.Write(writer, binary.LittleEndian, f)
 }
+
+// Buffer field in buffer record
+
+func (f *field) buffer(recBuf []byte) []byte {
+	return recBuf[int(f.Offset) : int(f.Offset)+int(f.Len)]
+}
+
+func (f *field) setBuffer(recBuf []byte, value string) {
+	copy(recBuf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
+}

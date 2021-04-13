@@ -155,3 +155,16 @@ func TestFieldWrite(t *testing.T) {
 	require.Equal(t, byte(0), b[12])
 	require.Equal(t, byte(14), b[16])
 }
+
+// Buffer field in buffer record
+
+func TestFieldBuffer(t *testing.T) {
+	f, _ := newField("Log", "L", 1, 0)
+	f.Offset = 6
+	recBuf := []byte(" Abc  T 12")
+
+	require.Equal(t, []byte("T"), f.buffer(recBuf))
+
+	f.setBuffer(recBuf, "F")
+	require.Equal(t, []byte("F"), f.buffer(recBuf))
+}
