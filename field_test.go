@@ -1,6 +1,7 @@
 package xbase
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,6 +12,17 @@ func TestFieldName(t *testing.T) {
 		Name: [11]byte{'N', 'A', 'M', 'E', 0, 0, 0, 0, 0, 0},
 	}
 	require.Equal(t, "NAME", f.name())
+}
+
+// New field
+
+func TestNewField(t *testing.T) {
+	f, err := newField("Price", "N", 12, 2)
+	require.NoError(t, err)
+	require.Equal(t, "PRICE", f.name())
+	require.Equal(t, byte('N'), f.Type)
+	require.Equal(t, byte(12), f.Len)
+	require.Equal(t, byte(2), f.Dec)
 }
 
 func TestFieldSetName(t *testing.T) {
@@ -84,14 +96,7 @@ func TestFieldSetDec(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestNewField(t *testing.T) {
-	f, err := newField("Price", "N", 12, 2)
-	require.NoError(t, err)
-	require.Equal(t, "PRICE", f.name())
-	require.Equal(t, byte('N'), f.Type)
-	require.Equal(t, byte(12), f.Len)
-	require.Equal(t, byte(2), f.Dec)
-}
+// String utils
 
 func TestPadRight(t *testing.T) {
 	require.Equal(t, "Abc   ", padRight("Abc", 6))
@@ -106,4 +111,47 @@ func TestPadLeft(t *testing.T) {
 func TestIsASCII(t *testing.T) {
 	require.Equal(t, true, isASCII("Abc"))
 	require.Equal(t, false, isASCII("AbЖc"))
+}
+
+// Field read/write
+
+func TestFieldRead(t *testing.T) {
+	b := make([]byte, fieldSize)
+	copy(b[:], "NAME")
+	b[11] = 'C'
+	b[12] = 1
+	b[16] = 14
+	r := bytes.NewReader(b)
+
+	f := &field{}
+	err := f.read(r)
+
+	require.NoError(t, err)
+	require.Equal(t, "NAME", f.name())
+	require.Equal(t, byte('C'), f.Type)
+	require.Equal(t, uint32(1), f.Offset)
+	require.Equal(t, byte(14), f.Len)
+	require.Equal(t, byte(0), f.Dec)
+}
+
+func TestFieldWrite(t *testing.T) {
+	f := &field{}
+	copy(f.Name[:], "NAME")
+	f.Type = 'C'
+	f.Offset = 1
+	f.Len = 14
+	f.Dec = 0
+
+	buf := bytes.NewBuffer(nil)
+	err := f.write(buf)
+
+	require.NoError(t, err)
+	b := buf.Bytes()
+	require.Equal(t, byte('N'), b[0])
+	require.Equal(t, byte('A'), b[1])
+	require.Equal(t, byte('M'), b[2])
+	require.Equal(t, byte('E'), b[3])
+	require.Equal(t, byte('C'), b[11])
+	require.Equal(t, byte(0), b[12])
+	require.Equal(t, byte(14), b[16])
 }

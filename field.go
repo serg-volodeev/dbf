@@ -2,7 +2,9 @@ package xbase
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 	"unicode"
 )
@@ -140,4 +142,17 @@ func (f *field) setDec(dec int) error {
 	}
 	f.Dec = byte(dec)
 	return nil
+}
+
+// Read/write
+
+func (f *field) read(reader io.Reader) error {
+	return binary.Read(reader, binary.LittleEndian, f)
+}
+
+func (f *field) write(writer io.Writer) error {
+	tmp := f.Offset
+	f.Offset = 0
+	defer func() { f.Offset = tmp }()
+	return binary.Write(writer, binary.LittleEndian, f)
 }
