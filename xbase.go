@@ -4,6 +4,7 @@ package xbase
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"golang.org/x/text/encoding"
 )
@@ -64,6 +65,41 @@ func (db *XBase) BOF() bool {
 	return db.recNo == 0 || db.RecCount() == 0
 }
 
+// FieldNo returns the number of the field by name.
+// If name is not found returns 0.
+// Fields are numbered starting from 1.
+func (db *XBase) FieldNo(name string) int {
+	name = strings.ToUpper(strings.TrimSpace(name))
+	for i, f := range db.fields {
+		if f.name() == name {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+// FieldInfo returns field attributes by number.
+// Fields are numbered starting from 1.
+func (db *XBase) FieldInfo(fieldNo int) (name, typ string, length, dec int, err error) {
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		err = db.wrapFieldError("FieldInfo", fieldNo, err)
+		return
+	}
+	name = f.name()
+	typ = string([]byte{f.Type})
+	length = int(f.Len)
+	dec = int(f.Dec)
+	return
+}
+
+func (db *XBase) fieldByNo(fieldNo int) (*field, error) {
+	if fieldNo < 1 || fieldNo > len(db.fields) {
+		return nil, fmt.Errorf("field number out of range")
+	}
+	return db.fields[fieldNo-1], nil
+}
+
 // AddField adds a field to the structure of the DBF file.
 // This method can only be used before creating a new file.
 //
@@ -96,4 +132,12 @@ func (db *XBase) AddField(name string, typ string, opts ...int) error {
 
 func wrapError(s string, err error) error {
 	return fmt.Errorf("xbase: %s: %w", s, err)
+}
+
+func (db *XBase) wrapFieldError(s string, fieldNo int, err error) error {
+	prefix := fmt.Sprintf("xbase: %s: field %d", s, fieldNo)
+	if fieldNo < 1 || fieldNo > len(db.fields) {
+		return fmt.Errorf("%s: %w", prefix, err)
+	}
+	return fmt.Errorf("%s %q: %w", prefix, db.fields[fieldNo-1].name(), err)
 }
