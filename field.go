@@ -55,3 +55,24 @@ func (f *field) setType(typ string) error {
 	f.Type = t
 	return nil
 }
+
+func (f *field) setLen(length int) error {
+	switch f.Type {
+	case 'C':
+		if length <= 0 || length > maxCFieldLen {
+			return fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxCFieldLen)
+		}
+	case 'N':
+		if length <= 0 || length > maxNFieldLen {
+			return fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxNFieldLen)
+		}
+	case 'L':
+		length = defaultLFieldLen
+	case 'D':
+		length = defaultDFieldLen
+	default:
+		return fmt.Errorf("field type not defined")
+	}
+	f.Len = byte(length)
+	return nil
+}

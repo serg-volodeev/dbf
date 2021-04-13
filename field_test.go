@@ -40,3 +40,33 @@ func TestFieldSetType(t *testing.T) {
 	err = f.setType("X")
 	require.Error(t, err)
 }
+
+func TestFieldSetLen(t *testing.T) {
+	f := &field{Type: 'L'}
+
+	f.setType("L")
+	err := f.setLen(0)
+	require.NoError(t, err)
+	require.Equal(t, byte(1), f.Len)
+
+	f.setType("D")
+	err = f.setLen(12)
+	require.NoError(t, err)
+	require.Equal(t, byte(8), f.Len)
+
+	f.setType("C")
+	err = f.setLen(120)
+	require.NoError(t, err)
+	require.Equal(t, byte(120), f.Len)
+
+	err = f.setLen(255)
+	require.Error(t, err)
+
+	f.setType("N")
+	err = f.setLen(14)
+	require.NoError(t, err)
+	require.Equal(t, byte(14), f.Len)
+
+	err = f.setLen(20)
+	require.Error(t, err)
+}
