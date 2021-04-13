@@ -42,3 +42,16 @@ func (f *field) setName(name string) error {
 	copy(f.Name[:], name)
 	return nil
 }
+
+func (f *field) setType(typ string) error {
+	typ = strings.ToUpper(strings.TrimSpace(typ))
+	if len(typ) == 0 {
+		return fmt.Errorf("empty field type")
+	}
+	t := typ[0]
+	if bytes.IndexByte([]byte("CNLD"), t) < 0 {
+		return fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(t))
+	}
+	f.Type = t
+	return nil
+}
