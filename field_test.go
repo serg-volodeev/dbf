@@ -70,3 +70,16 @@ func TestFieldSetLen(t *testing.T) {
 	err = f.setLen(20)
 	require.Error(t, err)
 }
+
+func TestFieldSetDec(t *testing.T) {
+	f := &field{}
+	f.setType("N")
+	f.setLen(5)
+
+	err := f.setDec(2)
+	require.NoError(t, err)
+	require.Equal(t, byte(2), f.Dec)
+
+	err = f.setDec(4)
+	require.Error(t, err)
+}

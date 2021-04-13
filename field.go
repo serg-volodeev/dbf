@@ -76,3 +76,22 @@ func (f *field) setLen(length int) error {
 	f.Len = byte(length)
 	return nil
 }
+
+func (f *field) setDec(dec int) error {
+	if f.Type == 'N' {
+		if dec < 0 {
+			return fmt.Errorf("invalid field dec: got %d, want dec > 0", dec)
+		}
+		length := int(f.Len)
+		if length <= 2 && dec > 0 {
+			return fmt.Errorf("invalid field dec: got %d, want 0", dec)
+		}
+		if length > 2 && (dec > length-2) {
+			return fmt.Errorf("invalid field dec: got %d, want dec <= %d", dec, length-2)
+		}
+	} else {
+		dec = 0
+	}
+	f.Dec = byte(dec)
+	return nil
+}
