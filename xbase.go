@@ -141,3 +141,37 @@ func (db *XBase) wrapFieldError(s string, fieldNo int, err error) error {
 	}
 	return fmt.Errorf("%s %q: %w", prefix, db.fields[fieldNo-1].name(), err)
 }
+
+// SetCodePage sets the encoding mode for reading and writing string field values.
+// The default code page is 0.
+//
+// Supported code pages:
+//     437   - US MS-DOS
+//     850   - International MS-DOS
+//     1252  - Windows ANSI
+//     10000 - Standard Macintosh
+//     852   - Easern European MS-DOS
+//     866   - Russian MS-DOS
+//     865   - Nordic MS-DOS
+//     1255  - Hebrew Windows
+//     1256  - Arabic Windows
+//     10007 - Russian Macintosh
+//     1250  - Eastern European Windows
+//     1251  - Russian Windows
+//     1254  - Turkish Windows
+//     1253  - Greek Windows
+func (db *XBase) SetCodePage(cp int) {
+	cm := charmapByPage(cp)
+	if cm == nil {
+		return
+	}
+	db.encoder = cm.NewEncoder()
+	db.decoder = cm.NewDecoder()
+	db.header.setCodePage(cp)
+}
+
+// CodePage returns the code page of a DBF file.
+// Returns 0 if no code page is specified.
+func (db *XBase) CodePage() int {
+	return db.header.codePage()
+}

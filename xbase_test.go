@@ -29,3 +29,9 @@ func TestXBaseAddField(t *testing.T) {
 	require.Equal(t, 20, len)
 	require.Equal(t, 0, dec)
 }
+
+func TestXBaseCodePage(t *testing.T) {
+	db := New()
+	db.SetCodePage(866)
+	require.Equal(t, 866, db.CodePage())
+}
