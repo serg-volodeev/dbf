@@ -105,3 +105,44 @@ func TestXBaseReadEmptyRec(t *testing.T) {
 	err = db.CloseFile()
 	require.NoError(t, err)
 }
+
+func TestXBaseReadNext(t *testing.T) {
+	db := New()
+	err := db.OpenFile("./testdata/rec3.dbf", true)
+	require.NoError(t, err)
+
+	err = db.First()
+	require.NoError(t, err)
+	require.Equal(t, int64(1), db.RecNo())
+	require.Equal(t, false, db.EOF())
+	v1, err := db.FieldValueAsString(1)
+	require.NoError(t, err)
+	require.Equal(t, "Abc", v1)
+
+	err = db.Next()
+	require.NoError(t, err)
+	require.Equal(t, int64(2), db.RecNo())
+	require.Equal(t, false, db.EOF())
+	v1, err = db.FieldValueAsString(1)
+	require.NoError(t, err)
+	require.Equal(t, "", v1)
+
+	err = db.Next()
+	require.NoError(t, err)
+	require.Equal(t, int64(3), db.RecNo())
+	require.Equal(t, false, db.EOF())
+	v1, err = db.FieldValueAsString(1)
+	require.NoError(t, err)
+	require.Equal(t, "Мышь", v1)
+
+	err = db.Next()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+
+	err = db.Next()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+
+	err = db.CloseFile()
+	require.NoError(t, err)
+}
