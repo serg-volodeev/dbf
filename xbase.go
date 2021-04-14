@@ -175,3 +175,123 @@ func (db *XBase) SetCodePage(cp int) {
 func (db *XBase) CodePage() int {
 	return db.header.codePage()
 }
+
+// OpenFile opens an existing DBF file.
+func (db *XBase) OpenFile(name string, readOnly bool) error {
+	var err error
+
+	// Open file
+	if readOnly {
+		db.file, err = os.Open(name)
+	} else {
+		db.file, err = os.OpenFile(name, os.O_RDWR, 0666)
+	}
+	if err != nil {
+		return wrapError("OpenFile", err)
+	}
+
+	// Read header
+	err = db.header.read(db.file)
+	if err != nil {
+		return wrapError("OpenFile", err)
+	}
+
+	// Read fields
+	err = db.readFields()
+	if err != nil {
+		return wrapError("OpenFile", err)
+	}
+
+	db.buf = make([]byte, int(db.header.RecSize))
+	db.SetCodePage(db.header.codePage())
+	return nil
+}
+
+func (db *XBase) readFields() error {
+	offset := 1 // deleted mark
+	count := db.header.fieldCount()
+
+	for i := 0; i < count; i++ {
+		f := &field{}
+		if err := f.read(db.file); err != nil {
+			return err
+		}
+		f.Offset = uint32(offset)
+		db.fields = append(db.fields, f)
+		offset += int(f.Len)
+	}
+	return nil
+}
+
+// CloseFile closes a previously opened or created DBF file.
+func (db *XBase) CloseFile() error {
+	if err := db.file.Close(); err != nil {
+		return wrapError("CloseFile", err)
+	}
+	return nil
+
+	// if db.err != nil {
+	// 	return
+	// }
+	// defer db.wrapError("CloseFile")
+	// if db.isMod {
+	// 	db.header.setModDate(time.Now())
+	// 	db.writeHeader()
+	// 	db.writeFileEnd()
+	// }
+	// db.fileClose()
+}
+
+func (db *XBase) goTo(recNo int64) error {
+	if recNo < 1 {
+		db.recNo = 0
+		return nil
+	}
+	if recNo > db.RecCount() {
+		db.recNo = db.RecCount() + 1
+		return nil
+	}
+	db.recNo = recNo
+	// Seek
+	offset := int64(db.header.DataOffset) + int64(db.header.RecSize)*(db.recNo-1)
+	if _, err := db.file.Seek(offset, 0); err != nil {
+		return err
+	}
+	// Read
+	if _, err := db.file.Read(db.buf); err != nil {
+		return err
+	}
+	return nil
+}
+
+// First positions the object to the first record.
+func (db *XBase) First() error {
+	if err := db.goTo(1); err != nil {
+		return wrapError("First", err)
+	}
+	return nil
+}
+
+// Last positions the object to the last record.
+func (db *XBase) Last() error {
+	if err := db.goTo(db.RecCount()); err != nil {
+		return wrapError("Last", err)
+	}
+	return nil
+}
+
+// Next positions the object to the next record.
+func (db *XBase) Next() error {
+	if err := db.goTo(db.recNo + 1); err != nil {
+		return wrapError("Next", err)
+	}
+	return nil
+}
+
+// Prev positions the object to the previous record.
+func (db *XBase) Prev() error {
+	if err := db.goTo(db.recNo - 1); err != nil {
+		return wrapError("Prev", err)
+	}
+	return nil
+}

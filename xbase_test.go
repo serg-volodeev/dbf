@@ -35,3 +35,36 @@ func TestXBaseCodePage(t *testing.T) {
 	db.SetCodePage(866)
 	require.Equal(t, 866, db.CodePage())
 }
+
+func TestXBaseOpenEmptyFile(t *testing.T) {
+	db := New()
+	err := db.OpenFile("./testdata/rec0.dbf", true)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), db.RecCount())
+	require.Equal(t, 5, db.FieldCount())
+	require.Equal(t, true, db.EOF())
+	require.Equal(t, true, db.BOF())
+
+	err = db.First()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+	require.Equal(t, true, db.BOF())
+
+	err = db.Next()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+	require.Equal(t, true, db.BOF())
+
+	err = db.Last()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+	require.Equal(t, true, db.BOF())
+
+	err = db.Prev()
+	require.NoError(t, err)
+	require.Equal(t, true, db.EOF())
+	require.Equal(t, true, db.BOF())
+
+	err = db.CloseFile()
+	require.NoError(t, err)
+}
