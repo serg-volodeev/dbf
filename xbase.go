@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/text/encoding"
 )
@@ -294,4 +295,75 @@ func (db *XBase) Prev() error {
 		return wrapError("Prev", err)
 	}
 	return nil
+}
+
+// FieldValueAsString returns the string value of the field of the current record.
+// Fields are numbered starting from 1.
+func (db *XBase) FieldValueAsString(fieldNo int) (string, error) {
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		return "", db.wrapFieldError("FieldValueAsString", fieldNo, err)
+	}
+	v, err := f.stringValue(db.buf, db.decoder)
+	if err != nil {
+		return "", db.wrapFieldError("FieldValueAsString", fieldNo, err)
+	}
+	return v, nil
+}
+
+// FieldValueAsInt returns the integer value of the field of the current record.
+// Field type must be numeric ("N"). Fields are numbered starting from 1.
+func (db *XBase) FieldValueAsInt(fieldNo int) (int64, error) {
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		return 0, db.wrapFieldError("FieldValueAsInt", fieldNo, err)
+	}
+	v, err := f.intValue(db.buf)
+	if err != nil {
+		return 0, db.wrapFieldError("FieldValueAsInt", fieldNo, err)
+	}
+	return v, nil
+}
+
+// FieldValueAsFloat returns the float value of the field of the current record.
+// Field type must be numeric ("N"). Fields are numbered starting from 1.
+func (db *XBase) FieldValueAsFloat(fieldNo int) (float64, error) {
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		return 0, db.wrapFieldError("FieldValueAsFloat", fieldNo, err)
+	}
+	v, err := f.floatValue(db.buf)
+	if err != nil {
+		return 0, db.wrapFieldError("FieldValueAsFloat", fieldNo, err)
+	}
+	return v, nil
+}
+
+// FieldValueAsBool returns the boolean value of the field of the current record.
+// Field type must be logical ("L"). Fields are numbered starting from 1.
+func (db *XBase) FieldValueAsBool(fieldNo int) (bool, error) {
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		return false, db.wrapFieldError("FieldValueAsBool", fieldNo, err)
+	}
+	v, err := f.boolValue(db.buf)
+	if err != nil {
+		return false, db.wrapFieldError("FieldValueAsBool", fieldNo, err)
+	}
+	return v, nil
+}
+
+// FieldValueAsDate returns the date value of the field of the current record.
+// Field type must be date ("D"). Fields are numbered starting from 1.
+func (db *XBase) FieldValueAsDate(fieldNo int) (time.Time, error) {
+	var d time.Time
+	f, err := db.fieldByNo(fieldNo)
+	if err != nil {
+		return d, db.wrapFieldError("FieldValueAsDate", fieldNo, err)
+	}
+	v, err := f.dateValue(db.buf)
+	if err != nil {
+		return d, db.wrapFieldError("FieldValueAsDate", fieldNo, err)
+	}
+	return v, nil
 }

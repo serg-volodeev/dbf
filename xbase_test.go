@@ -2,6 +2,7 @@ package xbase
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -64,6 +65,42 @@ func TestXBaseOpenEmptyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, true, db.EOF())
 	require.Equal(t, true, db.BOF())
+
+	err = db.CloseFile()
+	require.NoError(t, err)
+}
+
+func TestXBaseReadEmptyRec(t *testing.T) {
+	db := New()
+	err := db.OpenFile("./testdata/rec1.dbf", true)
+	require.NoError(t, err)
+
+	err = db.First()
+	require.NoError(t, err)
+
+	v1, err := db.FieldValueAsString(1)
+	require.NoError(t, err)
+	require.Equal(t, "", v1)
+
+	v2, err := db.FieldValueAsBool(2)
+	require.NoError(t, err)
+	require.Equal(t, false, v2)
+
+	v3, err := db.FieldValueAsInt(3)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), v3)
+
+	v4, err := db.FieldValueAsFloat(4)
+	require.NoError(t, err)
+	require.Equal(t, float64(0), v4)
+
+	var d time.Time
+	v5, err := db.FieldValueAsDate(5)
+	require.NoError(t, err)
+	require.Equal(t, d, v5)
+
+	_, err = db.FieldValueAsDate(6)
+	require.Error(t, err)
 
 	err = db.CloseFile()
 	require.NoError(t, err)
