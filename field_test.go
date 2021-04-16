@@ -221,48 +221,48 @@ func TestFieldFloatValue(t *testing.T) {
 
 // Set value
 
-func TestFieldSetStringValue(t *testing.T) {
+func TestFieldSetValueC(t *testing.T) {
 	recBuf := make([]byte, 20)
 	f, _ := newField("NAME", "C", 5, 0)
 	f.Offset = 5
-	err := f.setStringValue(recBuf, " Abc", nil)
+	err := f.setValue(recBuf, " Abc", nil)
 	require.NoError(t, err)
 	require.Equal(t, []byte(" Abc "), recBuf[5:10])
 }
 
-func TestFieldSetBoolValue(t *testing.T) {
+func TestFieldSetValueL(t *testing.T) {
 	recBuf := make([]byte, 20)
 	f, _ := newField("NAME", "L", 1, 0)
 	f.Offset = 5
-	err := f.setBoolValue(recBuf, true)
+	err := f.setValue(recBuf, true, nil)
 	require.NoError(t, err)
 	require.Equal(t, []byte("T"), recBuf[5:6])
 }
 
-func TestFieldSetDateValue(t *testing.T) {
+func TestFieldSetValueD(t *testing.T) {
 	recBuf := make([]byte, 20)
 	f, _ := newField("NAME", "D", 8, 0)
 	f.Offset = 5
 	d := time.Date(2020, 9, 23, 0, 0, 0, 0, time.UTC)
-	err := f.setDateValue(recBuf, d)
+	err := f.setValue(recBuf, d, nil)
 	require.NoError(t, err)
 	require.Equal(t, []byte("20200923"), recBuf[5:13])
 }
 
-func TestFieldSetIntValue(t *testing.T) {
+func TestFieldSetValueN1(t *testing.T) {
 	recBuf := make([]byte, 20)
 	f, _ := newField("NAME", "N", 5, 0)
 	f.Offset = 5
-	err := f.setIntValue(recBuf, 123)
+	err := f.setValue(recBuf, 123, nil)
 	require.NoError(t, err)
 	require.Equal(t, []byte("  123"), recBuf[5:10])
 }
 
-func TestFieldSetFloatValue(t *testing.T) {
+func TestFieldSetValueN2(t *testing.T) {
 	recBuf := make([]byte, 20)
 	f, _ := newField("NAME", "N", 8, 2)
 	f.Offset = 5
-	err := f.setFloatValue(recBuf, 123.45)
+	err := f.setValue(recBuf, 123.45, nil)
 	require.NoError(t, err)
 	require.Equal(t, []byte("  123.45"), recBuf[5:13])
 }
