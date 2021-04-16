@@ -189,73 +189,58 @@ func (f *field) checkLen(value string) error {
 
 // Get value
 
-func (f *field) stringValue(recBuf []byte, decoder *encoding.Decoder) (string, error) {
-	s := string(f.buffer(recBuf))
-
+func (f *field) value(recBuf []byte, decoder *encoding.Decoder) (interface{}, error) {
+	var result interface{}
+	var err error
 	switch f.Type {
 	case 'C':
+		s := string(f.buffer(recBuf))
 		s = strings.TrimRight(s, " ")
-	case 'N':
-		s = strings.TrimLeft(s, " ")
-	}
-
-	if decoder != nil && f.Type == 'C' && !isASCII(s) {
-		ds, err := decoder.String(s)
-		if err != nil {
-			return "", err
+		if decoder != nil && !isASCII(s) {
+			s, err = decoder.String(s)
+			if err != nil {
+				return result, err
+			}
 		}
-		s = ds
+		result = s
+	case 'L':
+		b := f.buffer(recBuf)[0]
+		result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
+	case 'D':
+		var d time.Time
+		s := string(f.buffer(recBuf))
+		if strings.Trim(s, " ") == "" {
+			result = d
+		} else {
+			d, err = time.Parse("20060102", s)
+			if err != nil {
+				return result, err
+			}
+			result = d
+		}
+	case 'N':
+		s := string(f.buffer(recBuf))
+		s = strings.TrimSpace(s)
+		if s == "" || s == "." {
+			s = "0"
+		}
+		if f.Dec == 0 {
+			n, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return result, err
+			}
+			result = n
+		} else {
+			n, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return result, err
+			}
+			result = n
+		}
+	default:
+		return result, fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
 	}
-	return s, nil
-}
-
-func (f *field) boolValue(recBuf []byte) (bool, error) {
-	if err := f.checkType('L'); err != nil {
-		return false, err
-	}
-	fieldBuf := f.buffer(recBuf)
-	b := fieldBuf[0]
-	return (b == 'T' || b == 't' || b == 'Y' || b == 'y'), nil
-}
-
-func (f *field) dateValue(recBuf []byte) (time.Time, error) {
-	var d time.Time
-	if err := f.checkType('D'); err != nil {
-		return d, err
-	}
-	s := string(f.buffer(recBuf))
-	if strings.Trim(s, " ") == "" {
-		return d, nil
-	}
-	return time.Parse("20060102", s)
-}
-
-func (f *field) intValue(recBuf []byte) (int64, error) {
-	if err := f.checkType('N'); err != nil {
-		return 0, err
-	}
-	s := string(f.buffer(recBuf))
-	s = strings.TrimSpace(s)
-	if s == "" || s[0] == '.' {
-		return 0, nil
-	}
-	i := strings.IndexByte(s, '.')
-	if i > 0 {
-		s = s[0:i]
-	}
-	return strconv.ParseInt(s, 10, 64)
-}
-
-func (f *field) floatValue(recBuf []byte) (float64, error) {
-	if err := f.checkType('N'); err != nil {
-		return 0, err
-	}
-	s := string(f.buffer(recBuf))
-	s = strings.TrimSpace(s)
-	if s == "" || s[0] == '.' {
-		return 0, nil
-	}
-	return strconv.ParseFloat(s, 64)
+	return result, nil
 }
 
 // Set value

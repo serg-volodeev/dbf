@@ -304,11 +304,11 @@ func (db *XBase) FieldValueAsString(fieldNo int) (string, error) {
 	if err != nil {
 		return "", db.wrapFieldError("FieldValueAsString", fieldNo, err)
 	}
-	v, err := f.stringValue(db.buf, db.decoder)
+	v, err := f.value(db.buf, db.decoder)
 	if err != nil {
 		return "", db.wrapFieldError("FieldValueAsString", fieldNo, err)
 	}
-	return v, nil
+	return v.(string), nil
 }
 
 // FieldValueAsInt returns the integer value of the field of the current record.
@@ -318,11 +318,11 @@ func (db *XBase) FieldValueAsInt(fieldNo int) (int64, error) {
 	if err != nil {
 		return 0, db.wrapFieldError("FieldValueAsInt", fieldNo, err)
 	}
-	v, err := f.intValue(db.buf)
+	v, err := f.value(db.buf, nil)
 	if err != nil {
 		return 0, db.wrapFieldError("FieldValueAsInt", fieldNo, err)
 	}
-	return v, nil
+	return v.(int64), nil
 }
 
 // FieldValueAsFloat returns the float value of the field of the current record.
@@ -332,11 +332,11 @@ func (db *XBase) FieldValueAsFloat(fieldNo int) (float64, error) {
 	if err != nil {
 		return 0, db.wrapFieldError("FieldValueAsFloat", fieldNo, err)
 	}
-	v, err := f.floatValue(db.buf)
+	v, err := f.value(db.buf, nil)
 	if err != nil {
 		return 0, db.wrapFieldError("FieldValueAsFloat", fieldNo, err)
 	}
-	return v, nil
+	return v.(float64), nil
 }
 
 // FieldValueAsBool returns the boolean value of the field of the current record.
@@ -346,11 +346,11 @@ func (db *XBase) FieldValueAsBool(fieldNo int) (bool, error) {
 	if err != nil {
 		return false, db.wrapFieldError("FieldValueAsBool", fieldNo, err)
 	}
-	v, err := f.boolValue(db.buf)
+	v, err := f.value(db.buf, nil)
 	if err != nil {
 		return false, db.wrapFieldError("FieldValueAsBool", fieldNo, err)
 	}
-	return v, nil
+	return v.(bool), nil
 }
 
 // FieldValueAsDate returns the date value of the field of the current record.
@@ -361,9 +361,9 @@ func (db *XBase) FieldValueAsDate(fieldNo int) (time.Time, error) {
 	if err != nil {
 		return d, db.wrapFieldError("FieldValueAsDate", fieldNo, err)
 	}
-	v, err := f.dateValue(db.buf)
+	v, err := f.value(db.buf, nil)
 	if err != nil {
 		return d, db.wrapFieldError("FieldValueAsDate", fieldNo, err)
 	}
-	return v, nil
+	return v.(time.Time), nil
 }

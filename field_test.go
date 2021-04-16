@@ -172,51 +172,51 @@ func TestFieldBuffer(t *testing.T) {
 
 // Get value
 
-func TestFieldStringValue(t *testing.T) {
+func TestFieldValueC(t *testing.T) {
 	f, _ := newField("Name", "C", 5, 0)
 	f.Offset = 3
 	recBuf := []byte("   Abc    ")
-	v, err := f.stringValue(recBuf, nil)
+	v, err := f.value(recBuf, nil)
 	require.NoError(t, err)
-	require.Equal(t, "Abc", v)
+	require.Equal(t, "Abc", v.(string))
 }
 
-func TestFieldBoolValue(t *testing.T) {
+func TestFieldValueL(t *testing.T) {
 	f, _ := newField("Name", "L", 1, 0)
 	f.Offset = 3
 	recBuf := []byte("   T    ")
-	v, err := f.boolValue(recBuf)
+	v, err := f.value(recBuf, nil)
 	require.NoError(t, err)
-	require.Equal(t, true, v)
+	require.Equal(t, true, v.(bool))
 }
 
-func TestFieldDateValue(t *testing.T) {
+func TestFieldValueD(t *testing.T) {
 	f, _ := newField("Name", "D", 8, 0)
 	f.Offset = 3
 	recBuf := []byte("   20200923    ")
 
 	d := time.Date(2020, 9, 23, 0, 0, 0, 0, time.UTC)
-	v, err := f.dateValue(recBuf)
+	v, err := f.value(recBuf, nil)
 	require.NoError(t, err)
-	require.Equal(t, d, v)
+	require.Equal(t, d, v.(time.Time))
 }
 
-func TestFieldIntValue(t *testing.T) {
+func TestFieldValueN1(t *testing.T) {
 	f, _ := newField("Name", "N", 8, 0)
 	f.Offset = 3
 	recBuf := []byte("      -2020    ")
-	v, err := f.intValue(recBuf)
+	v, err := f.value(recBuf, nil)
 	require.NoError(t, err)
-	require.Equal(t, int64(-2020), v)
+	require.Equal(t, int64(-2020), v.(int64))
 }
 
-func TestFieldFloatValue(t *testing.T) {
+func TestFieldValueN2(t *testing.T) {
 	f, _ := newField("Name", "N", 8, 2)
 	f.Offset = 3
 	recBuf := []byte("     -20.21    ")
-	v, err := f.floatValue(recBuf)
+	v, err := f.value(recBuf, nil)
 	require.NoError(t, err)
-	require.Equal(t, float64(-20.21), v)
+	require.Equal(t, float64(-20.21), v.(float64))
 }
 
 // Set value
