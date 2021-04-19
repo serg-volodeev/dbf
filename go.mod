@@ -1,4 +1,4 @@
-module github.com/serg-volodeev/xbase
+module github.com/serg-volodeev/dbf
 
 go 1.16
 

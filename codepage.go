@@ -1,4 +1,4 @@
-package xbase
+package dbf
 
 import "golang.org/x/text/encoding/charmap"
 

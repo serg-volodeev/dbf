@@ -1,4 +1,4 @@
-package xbase
+package dbf
 
 import (
 	"bytes"

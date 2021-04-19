@@ -1,5 +1,5 @@
 // xbase package implements functions for working with DBF files.
-package xbase
+package dbf
 
 import (
 	"fmt"
