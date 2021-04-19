@@ -53,7 +53,7 @@ func TestWriterWriteRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	testBytes := readFile("./testdata/test.dbf")
-	goldBytes := readFile("./testdata/rec3.dbf")
+	goldBytes := readFile("./testdata/rec4.dbf")
 	require.Equal(t, goldBytes, testBytes)
 }
 
