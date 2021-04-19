@@ -120,7 +120,7 @@ func isASCII(s string) bool {
 func interfaceToString(v interface{}) (string, error) {
 	result, ok := v.(string)
 	if !ok {
-		return "", fmt.Errorf("error convert interface{} to string")
+		return "", fmt.Errorf("error convert %v to string", v)
 	}
 	return result, nil
 }
@@ -128,7 +128,7 @@ func interfaceToString(v interface{}) (string, error) {
 func interfaceToBool(v interface{}) (bool, error) {
 	result, ok := v.(bool)
 	if !ok {
-		return false, fmt.Errorf("error convert interface{} to bool")
+		return false, fmt.Errorf("error convert %v to bool", v)
 	}
 	return result, nil
 }
@@ -154,7 +154,7 @@ func interfaceToInt(value interface{}) (int64, error) {
 	case uint64:
 		return int64(v), nil
 	}
-	return 0, fmt.Errorf("error convert interface{} to int")
+	return 0, fmt.Errorf("error convert %v to int", value)
 }
 
 func interfaceToFloat(value interface{}) (float64, error) {
@@ -164,13 +164,13 @@ func interfaceToFloat(value interface{}) (float64, error) {
 	case float64:
 		return float64(v), nil
 	}
-	return 0, fmt.Errorf("error convert interface{} to float")
+	return 0, fmt.Errorf("error convert %v to float", value)
 }
 
 func interfaceToDate(v interface{}) (time.Time, error) {
 	result, ok := v.(time.Time)
 	if !ok {
-		return result, fmt.Errorf("error convert interface{} to date")
+		return result, fmt.Errorf("error convert %v to date", v)
 	}
 	return result, nil
 }

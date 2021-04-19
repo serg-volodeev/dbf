@@ -61,7 +61,7 @@ func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, er
 func (w *Writer) addField(name string, typ string, length int, dec int) error {
 	f, err := newField(name, typ, length, dec)
 	if err != nil {
-		return err
+		return fmt.Errorf("field %q: %w", name, err)
 	}
 	w.fields = append(w.fields, f)
 	return nil
@@ -77,7 +77,10 @@ func (w *Writer) Write(record []interface{}) error {
 			return err
 		}
 	}
-	return w.writeRecord(record)
+	if err := w.writeRecord(record); err != nil {
+		return fmt.Errorf("record %d: %w", w.recCount+1, err)
+	}
+	return nil
 }
 
 func (w *Writer) initWriter() error {
@@ -123,7 +126,7 @@ func (w *Writer) writeRecord(record []interface{}) error {
 	}
 	for i := range w.fields {
 		if err := w.setFieldValue(i, record[i]); err != nil {
-			return err
+			return fmt.Errorf("field %q: %w", w.fields[i].name(), err)
 		}
 	}
 	if _, err := w.writer.Write(w.buf); err != nil {
