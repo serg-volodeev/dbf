@@ -33,7 +33,7 @@ func TestInterfaceToString(t *testing.T) {
 	require.Equal(t, "Abc", s)
 
 	x = true
-	s, err = interfaceToString(x)
+	_, err = interfaceToString(x)
 	require.Error(t, err)
 }
 
@@ -44,7 +44,7 @@ func TestInterfaceToBool(t *testing.T) {
 	require.Equal(t, true, b)
 
 	x = 5
-	b, err = interfaceToBool(x)
+	_, err = interfaceToBool(x)
 	require.Error(t, err)
 }
 
@@ -55,7 +55,7 @@ func TestInterfaceToInt(t *testing.T) {
 	require.Equal(t, int64(123), n)
 
 	x = 5.1
-	n, err = interfaceToInt(x)
+	_, err = interfaceToInt(x)
 	require.Error(t, err)
 }
 

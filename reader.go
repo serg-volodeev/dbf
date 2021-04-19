@@ -108,7 +108,7 @@ func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 	for i := range r.fields {
 		dst[i], err = r.fieldValue(i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("record %d: field %q: %w", r.recNo, r.fields[i].name(), err)
 		}
 	}
 	return dst, nil
