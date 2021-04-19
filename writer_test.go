@@ -40,7 +40,7 @@ func TestWriterWriteRecords(t *testing.T) {
 
 	records := [][]interface{}{
 		{"Abc", true, 123, 123.45, d1},
-		{"", false, 0, 0.0, d},
+		{"", false, 0, 0, d},
 		{"Мышь", false, -321, -54.32, d1},
 	}
 

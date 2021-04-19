@@ -67,7 +67,8 @@ func TestInterfaceToFloat(t *testing.T) {
 
 	x = 5
 	n, err = interfaceToFloat(x)
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Equal(t, float64(5), n)
 }
 
 func TestInterfaceToDate(t *testing.T) {
