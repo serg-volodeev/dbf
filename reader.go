@@ -11,6 +11,7 @@ import (
 	"golang.org/x/text/encoding"
 )
 
+// The Reader reads records from a CSV file.
 type Reader struct {
 	header  *header
 	fields  []*field
@@ -18,8 +19,17 @@ type Reader struct {
 	buf     []byte
 	recNo   uint32
 	decoder *encoding.Decoder
+
+	// ReuseRecord controls whether calls to Read may return a slice sharing
+	// the backing array of the previous call's returned slice for performance.
+	// By default, each call to Read returns newly allocated memory owned by the caller.
+	ReuseRecord bool
+
+	// lastRecord is a record cache and only used when ReuseRecord == true.
+	lastRecord []interface{}
 }
 
+// NewReader returns a new Reader that reads from r.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{
 		header: &header{},
@@ -27,16 +37,26 @@ func NewReader(r io.Reader) *Reader {
 	}
 }
 
-func (r *Reader) Read() ([]interface{}, error) {
+// Read reads one record (a slice of fields) from r.
+// Read always returns either a non-nil record or a non-nil error, but not both.
+// If there is no data left to be read, Read returns nil, io.EOF.
+// If ReuseRecord is true, the returned slice may be shared between multiple calls to Read.
+func (r *Reader) Read() (record []interface{}, err error) {
 	if len(r.fields) == 0 {
-		if err := r.readHeader(); err != nil {
+		if err := r.initReader(); err != nil {
 			return nil, err
 		}
 	}
-	return r.readRecord()
+	if r.ReuseRecord {
+		record, err = r.readRecord(r.lastRecord)
+		r.lastRecord = record
+	} else {
+		record, err = r.readRecord(nil)
+	}
+	return record, err
 }
 
-func (r *Reader) readHeader() error {
+func (r *Reader) initReader() error {
 	if err := r.header.read(r.reader); err != nil {
 		return err
 	}
@@ -73,7 +93,7 @@ func (r *Reader) readFields() error {
 	return nil
 }
 
-func (r *Reader) readRecord() ([]interface{}, error) {
+func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 	r.recNo++
 	if _, err := io.ReadFull(r.reader, r.buf); err != nil {
 		if err == io.ErrUnexpectedEOF {
@@ -81,27 +101,28 @@ func (r *Reader) readRecord() ([]interface{}, error) {
 		}
 		return nil, err
 	}
-	record := make([]interface{}, len(r.fields))
+	if len(dst) != len(r.fields) {
+		dst = make([]interface{}, len(r.fields))
+	}
 	var err error
 	for i := range r.fields {
-		record[i], err = r.fieldValue(i)
+		dst[i], err = r.fieldValue(i)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return record, nil
+	return dst, nil
 }
 
 func (r *Reader) fieldValue(index int) (interface{}, error) {
 	var result interface{}
 	var err error
 	f := r.fields[index]
-	fieldBuf := r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
-	fieldStr := string(fieldBuf)
+	s := string(r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)])
 
 	switch f.Type {
 	case 'C':
-		s := strings.TrimRight(fieldStr, " ")
+		s = strings.TrimRight(s, " ")
 		if r.decoder != nil && !isASCII(s) {
 			s, err = r.decoder.String(s)
 			if err != nil {
@@ -110,11 +131,10 @@ func (r *Reader) fieldValue(index int) (interface{}, error) {
 		}
 		result = s
 	case 'L':
-		b := fieldBuf[0]
+		b := s[0]
 		result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
 	case 'D':
 		var d time.Time
-		s := fieldStr
 		if strings.Trim(s, " ") == "" {
 			result = d
 		} else {
@@ -125,7 +145,7 @@ func (r *Reader) fieldValue(index int) (interface{}, error) {
 			result = d
 		}
 	case 'N':
-		s := strings.TrimSpace(fieldStr)
+		s = strings.TrimSpace(s)
 		if s == "" || s == "." {
 			s = "0"
 		}

@@ -1,4 +1,5 @@
-// xbase package implements functions for working with DBF files.
+// Package dbf reads and writes DBF files.
+// The api of the dbf package is similar to the csv package from the standard library.
 package dbf
 
 const (
