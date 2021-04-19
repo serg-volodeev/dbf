@@ -96,23 +96,6 @@ func TestFieldSetDec(t *testing.T) {
 	require.Error(t, err)
 }
 
-// String utils
-
-func TestPadRight(t *testing.T) {
-	require.Equal(t, "Abc   ", padRight("Abc", 6))
-	require.Equal(t, "Abc", padRight("Abc", 2))
-}
-
-func TestPadLeft(t *testing.T) {
-	require.Equal(t, "   Abc", padLeft("Abc", 6))
-	require.Equal(t, "Abc", padLeft("Abc", 2))
-}
-
-func TestIsASCII(t *testing.T) {
-	require.Equal(t, true, isASCII("Abc"))
-	require.Equal(t, false, isASCII("AbЖc"))
-}
-
 // Field read/write
 
 func TestFieldRead(t *testing.T) {

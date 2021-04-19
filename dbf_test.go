@@ -7,6 +7,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// String utils
+
+func TestPadRight(t *testing.T) {
+	require.Equal(t, "Abc   ", padRight("Abc", 6))
+	require.Equal(t, "Abc", padRight("Abc", 2))
+}
+
+func TestPadLeft(t *testing.T) {
+	require.Equal(t, "   Abc", padLeft("Abc", 6))
+	require.Equal(t, "Abc", padLeft("Abc", 2))
+}
+
+func TestIsASCII(t *testing.T) {
+	require.Equal(t, true, isASCII("Abc"))
+	require.Equal(t, false, isASCII("AbЖc"))
+}
+
+// Convert interface{}
+
 func TestInterfaceToString(t *testing.T) {
 	var x interface{} = "Abc"
 	s, err := interfaceToString(x)
