@@ -5,12 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
-	"time"
 	"unicode"
-
-	"golang.org/x/text/encoding"
 )
 
 const (
@@ -161,144 +157,9 @@ func (f *field) write(writer io.Writer) error {
 	return binary.Write(writer, binary.LittleEndian, f)
 }
 
-// Buffer field in buffer record
-
-func (f *field) buffer(recBuf []byte) []byte {
-	return recBuf[int(f.Offset) : int(f.Offset)+int(f.Len)]
-}
-
-func (f *field) setBuffer(recBuf []byte, value string) {
-	copy(recBuf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
-}
-
-// Check
-
-func (f *field) checkType(t byte) error {
-	if t != f.Type {
-		return fmt.Errorf("type mismatch: got %q, want %q", string(t), string(f.Type))
-	}
-	return nil
-}
-
 func (f *field) checkLen(value string) error {
 	if len(value) > int(f.Len) {
 		return fmt.Errorf("field value overflow: value len %d, field len %d", len(value), int(f.Len))
-	}
-	return nil
-}
-
-// Get value
-
-func (f *field) value(recBuf []byte, decoder *encoding.Decoder) (interface{}, error) {
-	var result interface{}
-	var err error
-	switch f.Type {
-	case 'C':
-		s := string(f.buffer(recBuf))
-		s = strings.TrimRight(s, " ")
-		if decoder != nil && !isASCII(s) {
-			s, err = decoder.String(s)
-			if err != nil {
-				return result, err
-			}
-		}
-		result = s
-	case 'L':
-		b := f.buffer(recBuf)[0]
-		result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
-	case 'D':
-		var d time.Time
-		s := string(f.buffer(recBuf))
-		if strings.Trim(s, " ") == "" {
-			result = d
-		} else {
-			d, err = time.Parse("20060102", s)
-			if err != nil {
-				return result, err
-			}
-			result = d
-		}
-	case 'N':
-		s := string(f.buffer(recBuf))
-		s = strings.TrimSpace(s)
-		if s == "" || s == "." {
-			s = "0"
-		}
-		if f.Dec == 0 {
-			n, err := strconv.ParseInt(s, 10, 64)
-			if err != nil {
-				return result, err
-			}
-			result = n
-		} else {
-			n, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				return result, err
-			}
-			result = n
-		}
-	default:
-		return result, fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
-	}
-	return result, nil
-}
-
-// Set value
-
-func (f *field) setValue(recBuf []byte, value interface{}, enc *encoding.Encoder) error {
-	switch f.Type {
-	case 'C':
-		v, err := interfaceToString(value)
-		if err != nil {
-			return err
-		}
-		if enc != nil && !isASCII(v) {
-			v, err = enc.String(v)
-			if err != nil {
-				return err
-			}
-		}
-		if err := f.checkLen(v); err != nil {
-			return err
-		}
-		f.setBuffer(recBuf, padRight(v, int(f.Len)))
-	case 'L':
-		v, err := interfaceToBool(value)
-		if err != nil {
-			return err
-		}
-		s := "F"
-		if v {
-			s = "T"
-		}
-		f.setBuffer(recBuf, s)
-	case 'D':
-		v, err := interfaceToDate(value)
-		if err != nil {
-			return err
-		}
-		f.setBuffer(recBuf, v.Format("20060102"))
-	case 'N':
-		var s string
-		if f.Dec == 0 {
-			v, err := interfaceToInt(value)
-			if err != nil {
-				return err
-			}
-			s = strconv.FormatInt(v, 10)
-		} else {
-			v, err := interfaceToFloat(value)
-			if err != nil {
-				return err
-			}
-			s = strconv.FormatFloat(v, 'f', int(f.Dec), 64)
-		}
-		if err := f.checkLen(s); err != nil {
-			return err
-		}
-		f.setBuffer(recBuf, padLeft(s, int(f.Len)))
-	default:
-		return fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
 	}
 	return nil
 }
