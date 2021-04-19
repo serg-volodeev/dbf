@@ -9,6 +9,11 @@ import (
 	"golang.org/x/text/encoding"
 )
 
+// A Writer writes records in DBF file.
+// The writes of individual records are buffered.
+// After all data has been written, the client should
+// call the Flush method to guarantee all data has been
+// forwarded to the underlying io.Writer.
 type Writer struct {
 	header   *header
 	fields   []*field
@@ -19,6 +24,7 @@ type Writer struct {
 	recCount uint32
 }
 
+// FieldInfo contains information about the field.
 type FieldInfo struct {
 	Name string
 	Type string
@@ -26,6 +32,7 @@ type FieldInfo struct {
 	Dec  int
 }
 
+// NewWriter returns a new Writer that writes to w.
 func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, error) {
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("no fields defined")
@@ -60,6 +67,10 @@ func (w *Writer) addField(name string, typ string, length int, dec int) error {
 	return nil
 }
 
+// Write writes a single record to w.
+// A record is a slice of interface{} with each value being one field.
+// Writes are buffered, so Flush must eventually be called to ensure
+// that the record is written to the underlying io.Writer.
 func (w *Writer) Write(record []interface{}) error {
 	if w.recCount == 0 {
 		if err := w.initWriter(); err != nil {
@@ -183,6 +194,7 @@ func (w *Writer) setFieldValue(index int, value interface{}) error {
 	return nil
 }
 
+// Flush writes any buffered data to the underlying io.Writer.
 func (w *Writer) Flush() error {
 	if err := w.writer.WriteByte(fileEnd); err != nil {
 		return err
