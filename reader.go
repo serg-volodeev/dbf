@@ -57,7 +57,12 @@ func (r *Reader) initReader() error {
 	}
 	// Create buffer
 	r.buf = make([]byte, int(r.header.RecSize))
-	return r.SetCodePage(r.header.codePage())
+	// Code page
+	if cp := r.header.codePage(); cp != 0 {
+		cm := charmapByPage(cp)
+		r.decoder = cm.NewDecoder()
+	}
+	return nil
 }
 
 func (r *Reader) SetCodePage(cp int) error {
