@@ -10,8 +10,10 @@ import (
 )
 
 func TestReaderNewReader(t *testing.T) {
-	r := NewReader(nil)
-	require.NotEqual(t, nil, r.header)
+	r, err := NewReader(nil, 866)
+	require.NoError(t, err)
+	require.NotNil(t, r.header)
+	require.NotNil(t, r.decoder)
 }
 
 func TestReaderReadFileEmpty(t *testing.T) {
@@ -19,7 +21,9 @@ func TestReaderReadFileEmpty(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r := NewReader(f)
+	r, err := NewReader(f, 0)
+	require.NoError(t, err)
+
 	rec, err := r.Read()
 	require.Error(t, err)
 	require.Equal(t, io.EOF, err)
@@ -33,7 +37,9 @@ func TestReaderReadRecordEmpty(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r := NewReader(f)
+	r, err := NewReader(f, 0)
+	require.NoError(t, err)
+
 	rec, err := r.Read()
 	require.NoError(t, err)
 	require.Equal(t, 5, len(rec))
@@ -50,7 +56,8 @@ func TestReaderReadRecords(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r := NewReader(f)
+	r, err := NewReader(f, 0)
+	require.NoError(t, err)
 
 	rec, err := r.Read()
 	require.NoError(t, err)

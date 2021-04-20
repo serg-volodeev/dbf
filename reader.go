@@ -30,11 +30,20 @@ type Reader struct {
 }
 
 // NewReader returns a new Reader that reads from r.
-func NewReader(r io.Reader) *Reader {
-	return &Reader{
+func NewReader(r io.Reader, codePage int) (*Reader, error) {
+	rd := &Reader{
 		header: &header{},
 		reader: bufio.NewReader(r),
 	}
+	// Code page
+	if codePage > 0 {
+		cm := charmapByPage(codePage)
+		if cm == nil {
+			return nil, fmt.Errorf("unsupported code page %d", codePage)
+		}
+		rd.decoder = cm.NewDecoder()
+	}
+	return rd, nil
 }
 
 // Read reads one record (a slice of fields) from r.
@@ -70,9 +79,11 @@ func (r *Reader) initReader() error {
 	// Create buffer
 	r.buf = make([]byte, int(r.header.RecSize))
 	// Code page
-	cm := charmapByPage(r.header.codePage())
-	if cm != nil {
-		r.decoder = cm.NewDecoder()
+	if r.decoder == nil {
+		cm := charmapByPage(r.header.codePage())
+		if cm != nil {
+			r.decoder = cm.NewDecoder()
+		}
 	}
 	return nil
 }

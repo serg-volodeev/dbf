@@ -47,7 +47,10 @@ Read records.
     }
     defer f.Close()
 
-    r := dbf.NewReader(f)
+    r, err := dbf.NewReader(f, 0)
+    if err != nil {
+        return err
+    }
 
     for {
         record, err := r.Read()
