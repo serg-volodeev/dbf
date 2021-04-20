@@ -137,7 +137,7 @@ func (w *Writer) writeRecord(record []interface{}) error {
 }
 
 func (w *Writer) setFieldValue(index int, value interface{}) error {
-	var fieldStr string
+	var s string
 	f := w.fields[index]
 
 	switch f.Type {
@@ -155,24 +155,23 @@ func (w *Writer) setFieldValue(index int, value interface{}) error {
 		if err := f.checkLen(v); err != nil {
 			return err
 		}
-		fieldStr = padRight(v, int(f.Len))
+		s = padRight(v, int(f.Len))
 	case 'L':
 		v, err := interfaceToBool(value)
 		if err != nil {
 			return err
 		}
-		fieldStr = "F"
+		s = "F"
 		if v {
-			fieldStr = "T"
+			s = "T"
 		}
 	case 'D':
 		v, err := interfaceToDate(value)
 		if err != nil {
 			return err
 		}
-		fieldStr = v.Format("20060102")
+		s = v.Format("20060102")
 	case 'N':
-		var s string
 		if f.Dec == 0 {
 			v, err := interfaceToInt(value)
 			if err != nil {
@@ -189,11 +188,11 @@ func (w *Writer) setFieldValue(index int, value interface{}) error {
 		if err := f.checkLen(s); err != nil {
 			return err
 		}
-		fieldStr = padLeft(s, int(f.Len))
+		s = padLeft(s, int(f.Len))
 	default:
 		return fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
 	}
-	copy(w.buf[int(f.Offset):int(f.Offset)+int(f.Len)], fieldStr)
+	copy(w.buf[int(f.Offset):int(f.Offset)+int(f.Len)], s)
 	return nil
 }
 
