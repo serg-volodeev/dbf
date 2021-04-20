@@ -30,39 +30,18 @@ type Reader struct {
 }
 
 // NewReader returns a new Reader that reads from r.
-func NewReader(r io.Reader, codePage int) (*Reader, error) {
+func NewReader(r io.Reader) (*Reader, error) {
+	if _, ok := r.(io.Reader); !ok {
+		return nil, fmt.Errorf("parameter %v is not io.Reader", r)
+	}
 	rd := &Reader{
 		header: &header{},
 		reader: bufio.NewReader(r),
 	}
-	// Code page
-	if codePage > 0 {
-		cm := charmapByPage(codePage)
-		if cm == nil {
-			return nil, fmt.Errorf("unsupported code page %d", codePage)
-		}
-		rd.decoder = cm.NewDecoder()
+	if err := rd.initReader(); err != nil {
+		return nil, err
 	}
 	return rd, nil
-}
-
-// Read reads one record (a slice of fields) from r.
-// Read always returns either a non-nil record or a non-nil error, but not both.
-// If there is no data left to be read, Read returns nil, io.EOF.
-// If ReuseRecord is true, the returned slice may be shared between multiple calls to Read.
-func (r *Reader) Read() (record []interface{}, err error) {
-	if len(r.fields) == 0 {
-		if err := r.initReader(); err != nil {
-			return nil, err
-		}
-	}
-	if r.ReuseRecord {
-		record, err = r.readRecord(r.lastRecord)
-		r.lastRecord = record
-	} else {
-		record, err = r.readRecord(nil)
-	}
-	return record, err
 }
 
 func (r *Reader) initReader() error {
@@ -78,14 +57,50 @@ func (r *Reader) initReader() error {
 	}
 	// Create buffer
 	r.buf = make([]byte, int(r.header.RecSize))
-	// Code page
-	if r.decoder == nil {
-		cm := charmapByPage(r.header.codePage())
-		if cm != nil {
-			r.decoder = cm.NewDecoder()
-		}
+	return r.SetCodePage(r.header.codePage())
+}
+
+func (r *Reader) SetCodePage(cp int) error {
+	cm := charmapByPage(cp)
+	if cm == nil {
+		return fmt.Errorf("unsupported code page %d", cp)
 	}
+	r.decoder = cm.NewDecoder()
+	r.header.setCodePage(cp)
 	return nil
+}
+
+func (r *Reader) CodePage() int {
+	return r.header.codePage()
+}
+
+func (r *Reader) RecordCount() uint32 {
+	return r.header.RecCount
+}
+
+func (r *Reader) Fields() []FieldInfo {
+	list := make([]FieldInfo, len(r.fields))
+	for i, f := range r.fields {
+		list[i].Name = f.name()
+		list[i].Type = string(f.Type)
+		list[i].Len = int(f.Len)
+		list[i].Dec = int(f.Dec)
+	}
+	return list
+}
+
+// Read reads one record (a slice of fields) from r.
+// Read always returns either a non-nil record or a non-nil error, but not both.
+// If there is no data left to be read, Read returns nil, io.EOF.
+// If ReuseRecord is true, the returned slice may be shared between multiple calls to Read.
+func (r *Reader) Read() (record []interface{}, err error) {
+	if r.ReuseRecord {
+		record, err = r.readRecord(r.lastRecord)
+		r.lastRecord = record
+	} else {
+		record, err = r.readRecord(nil)
+	}
+	return record, err
 }
 
 func (r *Reader) readFields() error {

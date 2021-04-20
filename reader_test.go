@@ -9,11 +9,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestReaderNewReaderEmptyReader(t *testing.T) {
+	r, err := NewReader(nil)
+	require.Error(t, err)
+	require.Nil(t, r)
+}
+
 func TestReaderNewReader(t *testing.T) {
-	r, err := NewReader(nil, 866)
+	f, err := os.Open("./testdata/rec3.dbf")
 	require.NoError(t, err)
-	require.NotNil(t, r.header)
-	require.NotNil(t, r.decoder)
+	defer f.Close()
+
+	r, err := NewReader(f)
+	require.NoError(t, err)
+	require.Equal(t, uint32(3), r.RecordCount())
+	require.Equal(t, 866, r.CodePage())
+
+	fields := r.Fields()
+	require.Equal(t, 5, len(fields))
+	require.Equal(t, "NAME", fields[0].Name)
+	require.Equal(t, "C", fields[0].Type)
 }
 
 func TestReaderReadFileEmpty(t *testing.T) {
@@ -21,7 +36,7 @@ func TestReaderReadFileEmpty(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r, err := NewReader(f, 0)
+	r, err := NewReader(f)
 	require.NoError(t, err)
 
 	rec, err := r.Read()
@@ -37,7 +52,7 @@ func TestReaderReadRecordEmpty(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r, err := NewReader(f, 0)
+	r, err := NewReader(f)
 	require.NoError(t, err)
 
 	rec, err := r.Read()
@@ -56,7 +71,7 @@ func TestReaderReadRecords(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	r, err := NewReader(f, 0)
+	r, err := NewReader(f)
 	require.NoError(t, err)
 
 	rec, err := r.Read()
