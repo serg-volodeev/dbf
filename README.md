@@ -11,7 +11,7 @@ Memo fields are not supported. Index files are not supported.
 
     f, err := os.Create("products.dbf")
     if err != nil {
-        return err
+        log.Fatal(err)
     }
     defer f.Close()
 
@@ -23,7 +23,7 @@ Memo fields are not supported. Index files are not supported.
     }
     w, err := dbf.NewWriter(f, fields, 1251)
     if err != nil {
-        return err
+        log.Fatal(err)
     }
     record := make([]interface{}, len(fields))
     record[0] = "Apple"
@@ -32,33 +32,29 @@ Memo fields are not supported. Index files are not supported.
     record[3] = time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
 
     if err := w.Write(record); err != nil {
-        return err
+        log.Fatal(err)
     }
-
     if err := w.Flush(); err != nil {
-        return err
+        log.Fatal(err)
     }
 
 Read records.
 
     f, err := os.Open("products.dbf")
     if err != nil {
-        return err
+        log.Fatal(err)
     }
     defer f.Close()
 
-    r, err := dbf.NewReader(f, 0)
+    r, err := dbf.NewReader(f)
     if err != nil {
-        return err
+        log.Fatal(err)
     }
 
-    for {
+    for i := uint32(0); i < r.RecordCount(); i++ {
         record, err := r.Read()
-        if err == io.EOF {
-            break
-        }
         if err != nil {
-            return err
+            log.Fatal(err)
         }
         fmt.Println(record)
     }
