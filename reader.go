@@ -65,6 +65,23 @@ func (r *Reader) initReader() error {
 	return nil
 }
 
+// SetCodePage sets the code page if no code page is set in the file header.
+//
+// Supported code pages:
+//     437   - US MS-DOS
+//     850   - International MS-DOS
+//     1252  - Windows ANSI
+//     10000 - Standard Macintosh
+//     852   - Easern European MS-DOS
+//     866   - Russian MS-DOS
+//     865   - Nordic MS-DOS
+//     1255  - Hebrew Windows
+//     1256  - Arabic Windows
+//     10007 - Russian Macintosh
+//     1250  - Eastern European Windows
+//     1251  - Russian Windows
+//     1254  - Turkish Windows
+//     1253  - Greek Windows
 func (r *Reader) SetCodePage(cp int) error {
 	cm := charmapByPage(cp)
 	if cm == nil {
@@ -75,14 +92,17 @@ func (r *Reader) SetCodePage(cp int) error {
 	return nil
 }
 
+// CodePage returns the code page set in the file header.
 func (r *Reader) CodePage() int {
 	return r.header.codePage()
 }
 
+// RecordCount returns the number of records in the DBF file.
 func (r *Reader) RecordCount() uint32 {
 	return r.header.RecCount
 }
 
+// Fields returns the file structure.
 func (r *Reader) Fields() []FieldInfo {
 	list := make([]FieldInfo, len(r.fields))
 	for i, f := range r.fields {

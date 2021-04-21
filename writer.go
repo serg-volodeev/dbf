@@ -24,16 +24,11 @@ type Writer struct {
 	recCount uint32
 }
 
-// FieldInfo contains information about the field.
-type FieldInfo struct {
-	Name string
-	Type string
-	Len  int
-	Dec  int
-}
-
 // NewWriter returns a new Writer that writes to w.
 func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, error) {
+	if _, ok := ws.(io.WriteSeeker); !ok {
+		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
+	}
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("no fields defined")
 	}
@@ -55,6 +50,9 @@ func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, er
 		w.encoder = cm.NewEncoder()
 		w.header.setCodePage(codePage)
 	}
+	if err := w.initWriter(); err != nil {
+		return nil, err
+	}
 	return w, nil
 }
 
@@ -72,11 +70,6 @@ func (w *Writer) addField(name string, typ string, length int, dec int) error {
 // Writes are buffered, so Flush must eventually be called to ensure
 // that the record is written to the underlying io.Writer.
 func (w *Writer) Write(record []interface{}) error {
-	if w.recCount == 0 {
-		if err := w.initWriter(); err != nil {
-			return err
-		}
-	}
 	if err := w.writeRecord(record); err != nil {
 		return fmt.Errorf("record %d: %w", w.recCount+1, err)
 	}

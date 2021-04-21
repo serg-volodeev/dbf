@@ -25,10 +25,21 @@ func TestReaderNewReader(t *testing.T) {
 	require.Equal(t, uint32(3), r.RecordCount())
 	require.Equal(t, 866, r.CodePage())
 
+	testFields := []FieldInfo{
+		{"NAME", "C", 20, 0},
+		{"FLAG", "L", 1, 0},
+		{"COUNT", "N", 5, 0},
+		{"PRICE", "N", 9, 2},
+		{"DATE", "D", 8, 0},
+	}
 	fields := r.Fields()
-	require.Equal(t, 5, len(fields))
-	require.Equal(t, "NAME", fields[0].Name)
-	require.Equal(t, "C", fields[0].Type)
+	require.Equal(t, len(testFields), len(fields))
+	for i, f := range testFields {
+		require.Equal(t, f.Name, fields[i].Name)
+		require.Equal(t, f.Type, fields[i].Type)
+		require.Equal(t, f.Len, fields[i].Len)
+		require.Equal(t, f.Dec, fields[i].Dec)
+	}
 }
 
 func TestReaderReadFileEmpty(t *testing.T) {
