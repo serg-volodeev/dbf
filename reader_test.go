@@ -3,6 +3,7 @@ package dbf
 import (
 	"io"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -116,4 +117,64 @@ func TestReaderReadRecords(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, io.EOF, err)
 	require.Equal(t, 0, len(rec))
+}
+func BenchmarkBoolValue1(b *testing.B) {
+	buf := []byte{'T'}
+	for i := 0; i < b.N; i++ {
+		s := string(buf)
+		if s[0] != 'T' {
+			b.Fatalf("Fail bool value 1")
+		}
+	}
+}
+
+func BenchmarkBoolValue2(b *testing.B) {
+	buf := []byte{'T'}
+	for i := 0; i < b.N; i++ {
+		// s := string(buf)
+		if buf[0] != 'T' {
+			b.Fatalf("Fail bool value 2")
+		}
+	}
+}
+
+func BenchmarkStringValue1(b *testing.B) {
+	buf := []byte("Abc   ")
+	for i := 0; i < b.N; i++ {
+		s := string(buf)
+		s = strings.TrimRight(s, " ")
+		if s != "Abc" {
+			b.Fatalf("Fail string value 1")
+		}
+	}
+}
+
+func BenchmarkStringValue2(b *testing.B) {
+	buf := []byte("Abc   ")
+	for i := 0; i < b.N; i++ {
+		// s := string(bytes.TrimRight(buf, " "))
+		s := trimRight(buf)
+		if s != "Abc" {
+			b.Fatalf("Fail string value %q", s)
+		}
+	}
+}
+
+func BenchmarkStringEmpty1(b *testing.B) {
+	buf := []byte("        ")
+	for i := 0; i < b.N; i++ {
+		s := string(buf)
+		if strings.Trim(s, " ") != "" {
+			b.Fatalf("Fail")
+		}
+	}
+}
+
+func BenchmarkStringEmpty2(b *testing.B) {
+	buf := []byte("        ")
+	for i := 0; i < b.N; i++ {
+		if !isEmpty(buf) {
+			b.Fatalf("Fail")
+		}
+	}
 }

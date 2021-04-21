@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/text/encoding"
@@ -169,11 +168,11 @@ func (r *Reader) fieldValue(index int) (interface{}, error) {
 	var result interface{}
 	var err error
 	f := r.fields[index]
-	s := string(r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)])
+	buf := r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
 
 	switch f.Type {
 	case 'C':
-		s = strings.TrimRight(s, " ")
+		s := trimRight(buf)
 		if r.decoder != nil && !isASCII(s) {
 			s, err = r.decoder.String(s)
 			if err != nil {
@@ -182,22 +181,20 @@ func (r *Reader) fieldValue(index int) (interface{}, error) {
 		}
 		result = s
 	case 'L':
-		b := s[0]
+		b := buf[0]
 		result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
 	case 'D':
 		var d time.Time
-		if strings.Trim(s, " ") == "" {
-			result = d
-		} else {
-			d, err = time.Parse("20060102", s)
+		if !isEmpty(buf) {
+			d, err = time.Parse("20060102", string(buf))
 			if err != nil {
 				return result, err
 			}
-			result = d
 		}
+		result = d
 	case 'N':
-		s = strings.TrimSpace(s)
-		if s == "" || s == "." {
+		s := trimLeft(buf)
+		if s == "" {
 			s = "0"
 		}
 		if f.Dec == 0 {
