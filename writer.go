@@ -25,6 +25,26 @@ type Writer struct {
 }
 
 // NewWriter returns a new Writer that writes to w.
+// The function writes the header of the DBF file.
+// If you call the Flash method afterwards, an empty file will be created.
+//
+// Supported code pages:
+//     437   - US MS-DOS
+//     850   - International MS-DOS
+//     1252  - Windows ANSI
+//     10000 - Standard Macintosh
+//     852   - Easern European MS-DOS
+//     866   - Russian MS-DOS
+//     865   - Nordic MS-DOS
+//     1255  - Hebrew Windows
+//     1256  - Arabic Windows
+//     10007 - Russian Macintosh
+//     1250  - Eastern European Windows
+//     1251  - Russian Windows
+//     1254  - Turkish Windows
+//     1253  - Greek Windows
+//
+// If the kp parameter is zero, the text fields will not be encoded.
 func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, error) {
 	if _, ok := ws.(io.WriteSeeker); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)

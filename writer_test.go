@@ -1,7 +1,7 @@
 package dbf
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -52,7 +52,7 @@ func readFile(name string) []byte {
 		panic(err)
 	}
 	defer f.Close()
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
