@@ -2,6 +2,18 @@
 Package dbf reads and writes [DBF](http://en.wikipedia.org/wiki/DBase#File_formats) files.
 The API of the __dbf__ package is similar to the __csv__ package from the standard library.
 
+## Installation
+You can incorporate the library into your local workspace with the following 'go get' command:
+
+    go get github.com/serg-volodeev/dbf
+
+## Using
+Code needing to call into the library needs to include the following import statement:
+
+    import (
+        "github.com/serg-volodeev/dbf"
+    )
+
 ## Limitations
 The following field types are supported: __C__, __N__, __L__, __D__.
 Memo fields are not supported. Index files are not supported.
