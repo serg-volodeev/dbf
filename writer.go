@@ -44,7 +44,7 @@ type Writer struct {
 //     1254  - Turkish Windows
 //     1253  - Greek Windows
 //
-// If the kp parameter is zero, the text fields will not be encoded.
+// If the codePage parameter is zero, the text fields will not be encoded.
 func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, error) {
 	if _, ok := ws.(io.WriteSeeker); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
