@@ -50,3 +50,17 @@ func (f *Fields) write(w io.Writer) error {
 	}
 	return nil
 }
+
+func (f *Fields) read(r io.Reader, count int) error {
+	offset := 1 // deleted mark
+	for i := 0; i < count; i++ {
+		item := &field{}
+		if err := item.read(r); err != nil {
+			return err
+		}
+		item.Offset = uint32(offset)
+		f.items = append(f.items, item)
+		offset += int(item.Len)
+	}
+	return nil
+}

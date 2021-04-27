@@ -41,3 +41,19 @@ func TestFieldsWrite(t *testing.T) {
 	require.Equal(t, byte('D'), b[32])
 	require.Equal(t, byte('A'), b[33])
 }
+
+func TestFieldsRead(t *testing.T) {
+	b := make([]byte, fieldSize)
+	copy(b[:], "NAME")
+	b[11] = 'C'
+	b[12] = 1
+	b[16] = 14
+	r := bytes.NewReader(b)
+
+	f := NewFields()
+	f.Add("name", "C", 14)
+	err := f.read(r, 1)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, f.Count())
+}
