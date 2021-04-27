@@ -33,7 +33,7 @@ Memo fields are not supported. Index files are not supported.
     fields.Add("PRICE", "N", 12, 2)
     fields.Add("DATE", "D")
     if fields.Error() != nil {
-        log.Fatal(err)
+        log.Fatal(fields.Error())
     }
     w, err := dbf.NewWriter(f, fields, 1251)
     if err != nil {
