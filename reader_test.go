@@ -26,7 +26,10 @@ func TestReaderNewReader(t *testing.T) {
 	require.Equal(t, uint32(3), r.RecordCount())
 	require.Equal(t, 866, r.CodePage())
 
-	testFields := []FieldInfo{
+	testFields := []struct {
+		Name, Type string
+		Len, Dec   int
+	}{
 		{"NAME", "C", 20, 0},
 		{"FLAG", "L", 1, 0},
 		{"COUNT", "N", 5, 0},
@@ -34,12 +37,13 @@ func TestReaderNewReader(t *testing.T) {
 		{"DATE", "D", 8, 0},
 	}
 	fields := r.Fields()
-	require.Equal(t, len(testFields), len(fields))
+	require.Equal(t, len(testFields), fields.Count())
 	for i, f := range testFields {
-		require.Equal(t, f.Name, fields[i].Name)
-		require.Equal(t, f.Type, fields[i].Type)
-		require.Equal(t, f.Len, fields[i].Len)
-		require.Equal(t, f.Dec, fields[i].Dec)
+		name, typ, length, dec := fields.Get(i)
+		require.Equal(t, f.Name, name)
+		require.Equal(t, f.Type, typ)
+		require.Equal(t, f.Len, length)
+		require.Equal(t, f.Dec, dec)
 	}
 }
 
@@ -56,7 +60,7 @@ func TestReaderReadFileEmpty(t *testing.T) {
 	require.Equal(t, io.EOF, err)
 	require.Equal(t, 0, len(rec))
 	require.Equal(t, uint32(0), r.header.RecCount)
-	require.Equal(t, 5, len(r.fields))
+	require.Equal(t, 5, r.fields.Count())
 }
 
 func TestReaderReadRecordEmpty(t *testing.T) {

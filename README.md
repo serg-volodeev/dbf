@@ -27,11 +27,13 @@ Memo fields are not supported. Index files are not supported.
     }
     defer f.Close()
 
-    fields := []dbf.FieldInfo{
-        {"NAME", "C", 30, 0},
-        {"COUNT", "N", 8, 0},
-        {"PRICE", "N", 12, 2},
-        {"DATE", "D", 8, 0},
+    fields := dbf.NewFields()
+    fields.Add("NAME", "C", 30)
+    fields.Add("COUNT", "N", 8)
+    fields.Add("PRICE", "N", 12, 2)
+    fields.Add("DATE", "D")
+    if fields.Error() != nil {
+        log.Fatal(err)
     }
     w, err := dbf.NewWriter(f, fields, 1251)
     if err != nil {

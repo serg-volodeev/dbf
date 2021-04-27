@@ -13,7 +13,7 @@ import (
 // The Reader reads records from a CSV file.
 type Reader struct {
 	header  *header
-	fields  []*field
+	fields  *Fields
 	reader  *bufio.Reader
 	buf     []byte
 	recNo   uint32
@@ -35,6 +35,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 	}
 	rd := &Reader{
 		header: &header{},
+		fields: NewFields(),
 		reader: bufio.NewReader(r),
 	}
 	if err := rd.initReader(); err != nil {
@@ -47,7 +48,7 @@ func (r *Reader) initReader() error {
 	if err := r.header.read(r.reader); err != nil {
 		return err
 	}
-	if err := r.readFields(); err != nil {
+	if err := r.fields.read(r.reader, r.header.fieldCount()); err != nil {
 		return err
 	}
 	// Skip byte header end
@@ -102,15 +103,8 @@ func (r *Reader) RecordCount() uint32 {
 }
 
 // Fields returns the file structure.
-func (r *Reader) Fields() []FieldInfo {
-	list := make([]FieldInfo, len(r.fields))
-	for i, f := range r.fields {
-		list[i].Name = f.name()
-		list[i].Type = string(f.Type)
-		list[i].Len = int(f.Len)
-		list[i].Dec = int(f.Dec)
-	}
-	return list
+func (r *Reader) Fields() *Fields {
+	return r.fields
 }
 
 // Read reads one record (a slice of fields) from r.
@@ -127,22 +121,6 @@ func (r *Reader) Read() (record []interface{}, err error) {
 	return record, err
 }
 
-func (r *Reader) readFields() error {
-	offset := 1 // deleted mark
-	count := r.header.fieldCount()
-
-	for i := 0; i < count; i++ {
-		f := &field{}
-		if err := f.read(r.reader); err != nil {
-			return err
-		}
-		f.Offset = uint32(offset)
-		r.fields = append(r.fields, f)
-		offset += int(f.Len)
-	}
-	return nil
-}
-
 func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 	r.recNo++
 	if _, err := io.ReadFull(r.reader, r.buf); err != nil {
@@ -151,14 +129,14 @@ func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 		}
 		return nil, err
 	}
-	if len(dst) != len(r.fields) {
-		dst = make([]interface{}, len(r.fields))
+	if len(dst) != r.fields.Count() {
+		dst = make([]interface{}, r.fields.Count())
 	}
 	var err error
-	for i := range r.fields {
+	for i := range r.fields.items {
 		dst[i], err = r.fieldValue(i)
 		if err != nil {
-			return nil, fmt.Errorf("record %d: field %q: %w", r.recNo, r.fields[i].name(), err)
+			return nil, fmt.Errorf("record %d: field %q: %w", r.recNo, r.fields.items[i].name(), err)
 		}
 	}
 	return dst, nil
@@ -167,7 +145,7 @@ func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 func (r *Reader) fieldValue(index int) (interface{}, error) {
 	var result interface{}
 	var err error
-	f := r.fields[index]
+	f := r.fields.items[index]
 	buf := r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
 
 	switch f.Type {

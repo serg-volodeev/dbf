@@ -2,23 +2,28 @@ package dbf
 
 import "io"
 
+// Fields for creating file structure.
 type Fields struct {
 	items []*field
 	err   error
 }
 
+// NewFields returns a pointer to a structure Fields.
 func NewFields() *Fields {
 	return &Fields{}
 }
 
+// Count returns the number of fields.
 func (f *Fields) Count() int {
 	return len(f.items)
 }
 
+// Error returns an error when adding a field
 func (f *Fields) Error() error {
 	return f.err
 }
 
+// Add adds a field to the structure.
 func (f *Fields) Add(name string, typ string, opts ...int) {
 	if f.err != nil {
 		return
@@ -37,6 +42,16 @@ func (f *Fields) Add(name string, typ string, opts ...int) {
 		return
 	}
 	f.items = append(f.items, item)
+}
+
+// Get returns field information by index.
+func (f *Fields) Get(i int) (name, typ string, length, dec int) {
+	item := f.items[i]
+	name = item.name()
+	typ = string(item.Type)
+	length = int(item.Len)
+	dec = int(item.Dec)
+	return
 }
 
 func (f *Fields) write(w io.Writer) error {
@@ -65,11 +80,10 @@ func (f *Fields) read(r io.Reader, count int) error {
 	return nil
 }
 
-func (f *Fields) Get(i int) (name, typ string, length, dec int) {
-	item := f.items[i]
-	name = item.name()
-	typ = string(item.Type)
-	length = int(item.Len)
-	dec = int(item.Dec)
-	return
+func (f *Fields) calcRecSize() uint16 {
+	size := 1 // deleted mark
+	for _, item := range f.items {
+		size += int(item.Len)
+	}
+	return uint16(size)
 }

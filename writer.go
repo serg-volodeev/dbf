@@ -16,7 +16,7 @@ import (
 // forwarded to the underlying io.Writer.
 type Writer struct {
 	header   *header
-	fields   []*field
+	fields   *Fields
 	writer   *bufio.Writer
 	ws       io.WriteSeeker
 	buf      []byte
@@ -45,22 +45,21 @@ type Writer struct {
 //     1253  - Greek Windows
 //
 // If the codePage parameter is zero, the text fields will not be encoded.
-func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, error) {
+func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error) {
 	if _, ok := ws.(io.WriteSeeker); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
 	}
-	if len(fields) == 0 {
+	if fields.Error() != nil {
+		return nil, fields.Error()
+	}
+	if fields.Count() == 0 {
 		return nil, fmt.Errorf("no fields defined")
 	}
 	w := &Writer{
 		header: newHeader(),
+		fields: fields,
 		ws:     ws,
 		writer: bufio.NewWriter(ws),
-	}
-	for _, f := range fields {
-		if err := w.addField(f.Name, f.Type, f.Len, f.Dec); err != nil {
-			return nil, err
-		}
 	}
 	if codePage > 0 {
 		cm := charmapByPage(codePage)
@@ -76,15 +75,6 @@ func NewWriter(ws io.WriteSeeker, fields []FieldInfo, codePage int) (*Writer, er
 	return w, nil
 }
 
-func (w *Writer) addField(name string, typ string, length int, dec int) error {
-	f, err := newField(name, typ, length, dec)
-	if err != nil {
-		return fmt.Errorf("field %q: %w", name, err)
-	}
-	w.fields = append(w.fields, f)
-	return nil
-}
-
 // Write writes a single record to w.
 // A record is a slice of interface{} with each value being one field.
 // Writes are buffered, so Flush must eventually be called to ensure
@@ -97,12 +87,12 @@ func (w *Writer) Write(record []interface{}) error {
 }
 
 func (w *Writer) initWriter() error {
-	w.header.setFieldCount(len(w.fields))
-	w.header.RecSize = w.calcRecSize()
+	w.header.setFieldCount(w.fields.Count())
+	w.header.RecSize = w.fields.calcRecSize()
 	if err := w.header.write(w.writer); err != nil {
 		return err
 	}
-	if err := w.writeFields(); err != nil {
+	if err := w.fields.write(w.writer); err != nil {
 		return err
 	}
 	if err := w.writer.WriteByte(headerEnd); err != nil {
@@ -113,33 +103,13 @@ func (w *Writer) initWriter() error {
 	return nil
 }
 
-func (w *Writer) calcRecSize() uint16 {
-	size := 1 // deleted mark
-	for _, f := range w.fields {
-		size += int(f.Len)
-	}
-	return uint16(size)
-}
-
-func (w *Writer) writeFields() error {
-	offset := 1 // deleted mark
-	for _, f := range w.fields {
-		f.Offset = uint32(offset)
-		if err := f.write(w.writer); err != nil {
-			return err
-		}
-		offset += int(f.Len)
-	}
-	return nil
-}
-
 func (w *Writer) writeRecord(record []interface{}) error {
-	if len(record) != len(w.fields) {
+	if len(record) != w.fields.Count() {
 		return fmt.Errorf("the record does not match the number of fields")
 	}
-	for i := range w.fields {
+	for i := range w.fields.items {
 		if err := w.setFieldValue(i, record[i]); err != nil {
-			return fmt.Errorf("field %q: %w", w.fields[i].name(), err)
+			return fmt.Errorf("field %q: %w", w.fields.items[i].name(), err)
 		}
 	}
 	if _, err := w.writer.Write(w.buf); err != nil {
@@ -151,7 +121,7 @@ func (w *Writer) writeRecord(record []interface{}) error {
 
 func (w *Writer) setFieldValue(index int, value interface{}) error {
 	var s string
-	f := w.fields[index]
+	f := w.fields.items[index]
 
 	switch f.Type {
 	case 'C':

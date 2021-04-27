@@ -14,13 +14,13 @@ func TestWriterWriteRecords(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	fields := []FieldInfo{
-		{"NAME", "C", 20, 0},
-		{"FLAG", "L", 0, 0},
-		{"COUNT", "N", 5, 0},
-		{"PRICE", "N", 9, 2},
-		{"DATE", "D", 0, 0},
-	}
+	fields := NewFields()
+	fields.Add("NAME", "C", 20)
+	fields.Add("FLAG", "L")
+	fields.Add("COUNT", "N", 5)
+	fields.Add("PRICE", "N", 9, 2)
+	fields.Add("DATE", "D")
+
 	w, err := NewWriter(f, fields, 866)
 	require.NoError(t, err)
 

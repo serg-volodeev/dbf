@@ -22,14 +22,6 @@ const (
 	headerSize = 32
 )
 
-// FieldInfo contains information about the field.
-type FieldInfo struct {
-	Name string
-	Type string
-	Len  int
-	Dec  int
-}
-
 type cPage struct {
 	code byte
 	page int
