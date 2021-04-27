@@ -64,3 +64,12 @@ func (f *Fields) read(r io.Reader, count int) error {
 	}
 	return nil
 }
+
+func (f *Fields) Get(i int) (name, typ string, length, dec int) {
+	item := f.items[i]
+	name = item.name()
+	typ = string(item.Type)
+	length = int(item.Len)
+	dec = int(item.Dec)
+	return
+}

@@ -20,6 +20,16 @@ func TestFieldsAdd(t *testing.T) {
 	require.Equal(t, 1, f.Count())
 }
 
+func TestFieldsGet(t *testing.T) {
+	f := NewFields()
+	f.Add("date", "d")
+	name, typ, length, dec := f.Get(0)
+	require.Equal(t, "DATE", name)
+	require.Equal(t, "D", typ)
+	require.Equal(t, 8, length)
+	require.Equal(t, 0, dec)
+}
+
 func TestFieldsWrite(t *testing.T) {
 	f := NewFields()
 	f.Add("name", "C", 14)
@@ -51,7 +61,6 @@ func TestFieldsRead(t *testing.T) {
 	r := bytes.NewReader(b)
 
 	f := NewFields()
-	f.Add("name", "C", 14)
 	err := f.read(r, 1)
 
 	require.NoError(t, err)
