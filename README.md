@@ -21,7 +21,7 @@ Memo fields are not supported. Index files are not supported.
 ## Examples
 Сreate a file and write one record.
     
-    ```go
+    ```golang
     f, err := os.Create("products.dbf")
     if err != nil {
         log.Fatal(err)
@@ -56,7 +56,7 @@ Memo fields are not supported. Index files are not supported.
 
 Read records.
     
-    ```go
+    ```golang
     f, err := os.Open("products.dbf")
     if err != nil {
         log.Fatal(err)
