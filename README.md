@@ -39,7 +39,7 @@ Memo fields are not supported. Index files are not supported.
     if err != nil {
         log.Fatal(err)
     }
-    record := make([]interface{}, len(fields))
+    record := make([]interface{}, fields.Count())
     record[0] = "Apple"
     record[1] = 1200
     record[2] = 18.20
