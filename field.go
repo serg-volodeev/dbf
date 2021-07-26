@@ -35,6 +35,24 @@ func (f *field) name() string {
 
 // New field
 
+func newLogicalField(name string) *field {
+	f := &field{}
+	f.setName(name)
+	f.Type = 'L'
+	f.Len = 1
+	f.Dec = 0
+	return f
+}
+
+func newDateField(name string) *field {
+	f := &field{}
+	f.setName(name)
+	f.Type = 'D'
+	f.Len = 8
+	f.Dec = 0
+	return f
+}
+
 func newField(name string, typ string, length, dec int) (*field, error) {
 	f := &field{}
 	// do not change the call order

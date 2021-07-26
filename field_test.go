@@ -16,6 +16,22 @@ func TestFieldName(t *testing.T) {
 
 // New field
 
+func TestNewLogicalField(t *testing.T) {
+	f := newLogicalField("Flag")
+	require.Equal(t, "FLAG", f.name())
+	require.Equal(t, byte('L'), f.Type)
+	require.Equal(t, byte(1), f.Len)
+	require.Equal(t, byte(0), f.Dec)
+}
+
+func TestNewDateField(t *testing.T) {
+	f := newDateField("Date")
+	require.Equal(t, "DATE", f.name())
+	require.Equal(t, byte('D'), f.Type)
+	require.Equal(t, byte(8), f.Len)
+	require.Equal(t, byte(0), f.Dec)
+}
+
 func TestNewField(t *testing.T) {
 	f, err := newField("Price", "N", 12, 2)
 	require.NoError(t, err)
