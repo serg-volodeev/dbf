@@ -9,6 +9,8 @@ import (
 	"golang.org/x/text/encoding"
 )
 
+const fileEnd byte = 0x1A
+
 // A Writer writes records in DBF file.
 // The writes of individual records are buffered.
 // After all data has been written, the client should

@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	fieldSize = 32
+
 	maxNameLen      = 10
 	maxCharacterLen = 254
 	maxNumericLen   = 19

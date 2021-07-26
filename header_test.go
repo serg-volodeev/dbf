@@ -23,6 +23,9 @@ func TestHeaderNew(t *testing.T) {
 	require.Equal(t, currentDate(), h.modDate())
 }
 
+var headerBytes = []byte{0x3, 0x1e, 0x2, 0x14, 0x3, 0, 0, 0, 0xc1, 0, 0x27,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x65, 0, 0}
+
 func TestHeaderWrite(t *testing.T) {
 	h := newHeader()
 	h.RecCount = uint32(3)
@@ -34,15 +37,11 @@ func TestHeaderWrite(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	h.write(buf)
 
-	expected := []byte{0x3, 0x1e, 0x2, 0x14, 0x3, 0, 0, 0, 0xc1, 0, 0x27,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x65, 0, 0}
-	require.Equal(t, expected, buf.Bytes())
+	require.Equal(t, headerBytes, buf.Bytes())
 }
 
 func TestHeaderRead(t *testing.T) {
-	b := []byte{0x3, 0x1e, 0x2, 0x14, 0x3, 0, 0, 0, 0xc1, 0, 0x27,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x65, 0, 0}
-	r := bytes.NewReader(b)
+	r := bytes.NewReader(headerBytes)
 
 	h := &header{}
 	h.read(r)

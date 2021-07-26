@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+const (
+	dbfId     byte = 0x03
+	headerEnd byte = 0x0D
+
+	headerSize = 32
+	yearOffset = 1900
+)
+
 type header struct {
 	Id         byte
 	ModYear    byte
@@ -30,14 +38,14 @@ func newHeader() *header {
 // Modified date
 
 func (h *header) modDate() time.Time {
-	year := int(h.ModYear) + 1900
+	year := int(h.ModYear) + yearOffset
 	month := time.Month(h.ModMonth)
 	day := int(h.ModDay)
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
 
 func (h *header) setModDate(d time.Time) {
-	h.ModYear = byte(d.Year() - 1900)
+	h.ModYear = byte(d.Year() - yearOffset)
 	h.ModMonth = byte(d.Month())
 	h.ModDay = byte(d.Day())
 }
