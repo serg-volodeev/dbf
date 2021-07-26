@@ -9,21 +9,22 @@ import (
 
 func TestFieldsNewFields(t *testing.T) {
 	f := NewFields()
-	require.NoError(t, f.Error())
 	require.Equal(t, 0, f.Count())
 }
 
-func TestFieldsAdd(t *testing.T) {
+func TestFieldsAddField(t *testing.T) {
 	f := NewFields()
-	f.Add("date", "d")
-	require.NoError(t, f.Error())
-	require.Equal(t, 1, f.Count())
+	f.AddNumericField("price", 12, 2)
+	f.AddLogicalField("flag")
+	f.AddDateField("date")
+	f.AddCharacterField("name", 25)
+	require.Equal(t, 4, f.Count())
 }
 
-func TestFieldsGet(t *testing.T) {
+func TestFieldsFieldInfo(t *testing.T) {
 	f := NewFields()
-	f.Add("date", "d")
-	name, typ, length, dec := f.Get(0)
+	f.AddDateField("date")
+	name, typ, length, dec := f.FieldInfo(0)
 	require.Equal(t, "DATE", name)
 	require.Equal(t, "D", typ)
 	require.Equal(t, 8, length)
@@ -32,8 +33,8 @@ func TestFieldsGet(t *testing.T) {
 
 func TestFieldsWrite(t *testing.T) {
 	f := NewFields()
-	f.Add("name", "C", 14)
-	f.Add("date", "D")
+	f.AddCharacterField("name", 14)
+	f.AddDateField("date")
 
 	buf := bytes.NewBuffer(nil)
 	err := f.write(buf)

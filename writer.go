@@ -49,9 +49,6 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	if _, ok := ws.(io.WriteSeeker); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
 	}
-	if fields.Error() != nil {
-		return nil, fields.Error()
-	}
 	if fields.Count() == 0 {
 		return nil, fmt.Errorf("no fields defined")
 	}

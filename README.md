@@ -17,7 +17,11 @@ import (
 ```
 
 ## Limitations
-The following field types are supported: __C__, __N__, __L__, __D__.
+The following field types are supported:
+- Character
+- Numeric
+- Logical
+- Date
 Memo fields are not supported. Index files are not supported.
 
 ## Examples
@@ -31,13 +35,11 @@ if err != nil {
 defer f.Close()
 
 fields := dbf.NewFields()
-fields.Add("NAME", "C", 30)
-fields.Add("COUNT", "N", 8)
-fields.Add("PRICE", "N", 12, 2)
-fields.Add("DATE", "D")
-if fields.Error() != nil {
-    log.Fatal(fields.Error())
-}
+fields.AddCharacterField("NAME", 30)
+fields.AddNumericField("COUNT", 8, 0)
+fields.AddNumericField("PRICE", 12, 2)
+fields.AddDateField("DATE")
+
 w, err := dbf.NewWriter(f, fields, 1251)
 if err != nil {
     log.Fatal(err)

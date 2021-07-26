@@ -5,7 +5,6 @@ import "io"
 // Fields for creating file structure.
 type Fields struct {
 	items []*field
-	err   error
 }
 
 // NewFields returns a pointer to a structure Fields.
@@ -18,34 +17,28 @@ func (f *Fields) Count() int {
 	return len(f.items)
 }
 
-// Error returns an error when adding a field
-func (f *Fields) Error() error {
-	return f.err
+// AddLogicalField adds a logical field to the structure.
+func (f *Fields) AddLogicalField(name string) {
+	f.items = append(f.items, newLogicalField(name))
 }
 
-// Add adds a field to the structure.
-func (f *Fields) Add(name string, typ string, opts ...int) {
-	if f.err != nil {
-		return
-	}
-	length := 0
-	dec := 0
-	if len(opts) > 0 {
-		length = opts[0]
-	}
-	if len(opts) > 1 {
-		dec = opts[1]
-	}
-	item, err := newField(name, typ, length, dec)
-	if err != nil {
-		f.err = err
-		return
-	}
-	f.items = append(f.items, item)
+// AddDateField adds a date field to the structure.
+func (f *Fields) AddDateField(name string) {
+	f.items = append(f.items, newDateField(name))
 }
 
-// Get returns field information by index.
-func (f *Fields) Get(i int) (name, typ string, length, dec int) {
+// AddCharacterField adds a character field to the structure.
+func (f *Fields) AddCharacterField(name string, length int) {
+	f.items = append(f.items, newCharacterField(name, length))
+}
+
+// AddNumericField adds a numeric field to the structure.
+func (f *Fields) AddNumericField(name string, length, dec int) {
+	f.items = append(f.items, newNumericField(name, length, dec))
+}
+
+// FieldInfo returns field information by index.
+func (f *Fields) FieldInfo(i int) (name, typ string, length, dec int) {
 	item := f.items[i]
 	name = item.name()
 	typ = string(item.Type)

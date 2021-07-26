@@ -39,7 +39,7 @@ func TestReaderNewReader(t *testing.T) {
 	fields := r.Fields()
 	require.Equal(t, len(testFields), fields.Count())
 	for i, f := range testFields {
-		name, typ, length, dec := fields.Get(i)
+		name, typ, length, dec := fields.FieldInfo(i)
 		require.Equal(t, f.Name, name)
 		require.Equal(t, f.Type, typ)
 		require.Equal(t, f.Len, length)
