@@ -68,9 +68,19 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 		w.encoder = cm.NewEncoder()
 		w.header.setCodePage(codePage)
 	}
-	if err := w.initWriter(); err != nil {
+	w.header.setFieldCount(w.fields.Count())
+	w.header.RecSize = w.fields.calcRecSize()
+	if err := w.header.write(w.writer); err != nil {
 		return nil, err
 	}
+	if err := w.fields.write(w.writer); err != nil {
+		return nil, err
+	}
+	if err := w.writer.WriteByte(headerEnd); err != nil {
+		return nil, err
+	}
+	w.buf = make([]byte, int(w.header.RecSize))
+	w.buf[0] = ' ' // deleted mark
 	return w, nil
 }
 
@@ -82,23 +92,6 @@ func (w *Writer) Write(record []interface{}) error {
 	if err := w.writeRecord(record); err != nil {
 		return fmt.Errorf("record %d: %w", w.recCount+1, err)
 	}
-	return nil
-}
-
-func (w *Writer) initWriter() error {
-	w.header.setFieldCount(w.fields.Count())
-	w.header.RecSize = w.fields.calcRecSize()
-	if err := w.header.write(w.writer); err != nil {
-		return err
-	}
-	if err := w.fields.write(w.writer); err != nil {
-		return err
-	}
-	if err := w.writer.WriteByte(headerEnd); err != nil {
-		return err
-	}
-	w.buf = make([]byte, int(w.header.RecSize))
-	w.buf[0] = ' ' // deleted mark
 	return nil
 }
 

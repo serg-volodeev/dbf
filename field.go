@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
+
+	"golang.org/x/text/encoding"
 )
 
 const (
@@ -114,4 +117,59 @@ func (f *field) checkLen(value string) error {
 		return fmt.Errorf("field value overflow: value len %d, field len %d", len(value), int(f.Len))
 	}
 	return nil
+}
+
+// Value to buffer
+
+func (f *field) characterToBuf(value interface{}, encoder *encoding.Encoder) (string, error) {
+	var err error
+	v, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("error convert %v to string", value)
+	}
+	if encoder != nil && !isASCII(v) {
+		v, err = encoder.String(v)
+		if err != nil {
+			return "", err
+		}
+	}
+	if err := f.checkLen(v); err != nil {
+		return "", err
+	}
+	v = padRight(v, int(f.Len))
+	return v, nil
+}
+
+func (f *field) logicalToBuf(value interface{}) (string, error) {
+	v, ok := value.(bool)
+	if !ok {
+		return "", fmt.Errorf("error convert %v to bool", value)
+	}
+	if v {
+		return "T", nil
+	}
+	return "F", nil
+}
+
+func (f *field) dateToBuf(value interface{}) (string, error) {
+	v, ok := value.(time.Time)
+	if !ok {
+		return "", fmt.Errorf("error convert %v to date", value)
+	}
+	return v.Format("20060102"), nil
+}
+
+func (f *field) numericToBuf(value interface{}) (string, error) {
+	var s string
+	if f.Dec == 0 {
+		s = fmt.Sprintf("%d", value)
+	} else {
+		format := fmt.Sprintf("%%.%df", f.Dec)
+		s = fmt.Sprintf(format, value)
+	}
+	if err := f.checkLen(s); err != nil {
+		return "", err
+	}
+	s = padLeft(s, int(f.Len))
+	return s, nil
 }

@@ -3,6 +3,7 @@ package dbf
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -81,4 +82,46 @@ func TestFieldWrite(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, fieldBytes, buf.Bytes())
+}
+
+// Value to buffer
+
+func TestCharacterToBuf(t *testing.T) {
+	f := newCharacterField("name", 6)
+	var v interface{} = "Abc"
+	s, err := f.characterToBuf(v, nil)
+	require.NoError(t, err)
+	require.Equal(t, "Abc   ", s)
+}
+
+func TestLogicalToBuf(t *testing.T) {
+	f := newLogicalField("name")
+	var v interface{} = false
+	s, err := f.logicalToBuf(v)
+	require.NoError(t, err)
+	require.Equal(t, "F", s)
+}
+
+func TestDateToBuf(t *testing.T) {
+	f := newDateField("name")
+	var v interface{} = time.Date(2021, 7, 26, 0, 0, 0, 0, time.UTC)
+	s, err := f.dateToBuf(v)
+	require.NoError(t, err)
+	require.Equal(t, "20210726", s)
+}
+
+func TestNumericIntToBuf(t *testing.T) {
+	f := newNumericField("name", 6, 0)
+	var v interface{} = -123
+	s, err := f.numericToBuf(v)
+	require.NoError(t, err)
+	require.Equal(t, "  -123", s)
+}
+
+func TestNumericFloatToBuf(t *testing.T) {
+	f := newNumericField("name", 9, 2)
+	var v interface{} = -123.4
+	s, err := f.numericToBuf(v)
+	require.NoError(t, err)
+	require.Equal(t, "  -123.40", s)
 }
