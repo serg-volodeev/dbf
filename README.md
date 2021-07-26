@@ -18,10 +18,12 @@ import (
 
 ## Limitations
 The following field types are supported:
+
 - Character
 - Numeric
 - Logical
 - Date
+
 Memo fields are not supported. Index files are not supported.
 
 ## Examples
