@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,7 +115,7 @@ func (f *field) write(writer io.Writer) error {
 
 func (f *field) checkLen(value string) error {
 	if len(value) > int(f.Len) {
-		return fmt.Errorf("field value overflow: value len %d, field len %d", len(value), int(f.Len))
+		return fmt.Errorf("field value %q overflow: value len %d, field len %d", value, len(value), int(f.Len))
 	}
 	return nil
 }
@@ -161,15 +162,50 @@ func (f *field) dateToBuf(value interface{}) (string, error) {
 
 func (f *field) numericToBuf(value interface{}) (string, error) {
 	var s string
-	if f.Dec == 0 {
-		s = fmt.Sprintf("%d", value)
-	} else {
-		format := fmt.Sprintf("%%.%df", f.Dec)
-		s = fmt.Sprintf(format, value)
+
+	switch v := value.(type) {
+	case int:
+		s = f.formatInt(int64(v))
+	case int8:
+		s = f.formatInt(int64(v))
+	case int16:
+		s = f.formatInt(int64(v))
+	case int32:
+		s = f.formatInt(int64(v))
+	case int64:
+		s = f.formatInt(int64(v))
+	case uint:
+		s = f.formatInt(int64(v))
+	case uint8:
+		s = f.formatInt(int64(v))
+	case uint16:
+		s = f.formatInt(int64(v))
+	case uint32:
+		s = f.formatInt(int64(v))
+	case uint64:
+		s = f.formatInt(int64(v))
+	case float32:
+		s = f.formatFloat(float64(v))
+	case float64:
+		s = f.formatFloat(float64(v))
+	default:
+		return "", fmt.Errorf("error convert %v to numeric", value)
 	}
 	if err := f.checkLen(s); err != nil {
 		return "", err
 	}
 	s = padLeft(s, int(f.Len))
 	return s, nil
+}
+
+func (f *field) formatInt(i int64) string {
+	s := strconv.FormatInt(i, 10)
+	if f.Dec > 0 {
+		s += "." + strings.Repeat("0", int(f.Dec))
+	}
+	return s
+}
+
+func (f *field) formatFloat(n float64) string {
+	return strconv.FormatFloat(n, 'f', int(f.Dec), 64)
 }

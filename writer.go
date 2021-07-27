@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"strconv"
 
 	"golang.org/x/text/encoding"
 )
@@ -113,59 +112,23 @@ func (w *Writer) writeRecord(record []interface{}) error {
 
 func (w *Writer) setFieldValue(index int, value interface{}) error {
 	var s string
+	var err error
 	f := w.fields.items[index]
 
 	switch f.Type {
 	case 'C':
-		v, err := interfaceToString(value)
-		if err != nil {
-			return err
-		}
-		if w.encoder != nil && !isASCII(v) {
-			v, err = w.encoder.String(v)
-			if err != nil {
-				return err
-			}
-		}
-		if err := f.checkLen(v); err != nil {
-			return err
-		}
-		s = padRight(v, int(f.Len))
+		s, err = f.characterToBuf(value, w.encoder)
 	case 'L':
-		v, err := interfaceToBool(value)
-		if err != nil {
-			return err
-		}
-		s = "F"
-		if v {
-			s = "T"
-		}
+		s, err = f.logicalToBuf(value)
 	case 'D':
-		v, err := interfaceToDate(value)
-		if err != nil {
-			return err
-		}
-		s = v.Format("20060102")
+		s, err = f.dateToBuf(value)
 	case 'N':
-		if f.Dec == 0 {
-			v, err := interfaceToInt(value)
-			if err != nil {
-				return err
-			}
-			s = strconv.FormatInt(v, 10)
-		} else {
-			v, err := interfaceToFloat(value)
-			if err != nil {
-				return err
-			}
-			s = strconv.FormatFloat(v, 'f', int(f.Dec), 64)
-		}
-		if err := f.checkLen(s); err != nil {
-			return err
-		}
-		s = padLeft(s, int(f.Len))
+		s, err = f.numericToBuf(value)
 	default:
 		return fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
+	}
+	if err != nil {
+		return err
 	}
 	copy(w.buf[int(f.Offset):int(f.Offset)+int(f.Len)], s)
 	return nil

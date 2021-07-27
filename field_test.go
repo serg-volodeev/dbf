@@ -88,10 +88,15 @@ func TestFieldWrite(t *testing.T) {
 
 func TestCharacterToBuf(t *testing.T) {
 	f := newCharacterField("name", 6)
+
 	var v interface{} = "Abc"
 	s, err := f.characterToBuf(v, nil)
 	require.NoError(t, err)
 	require.Equal(t, "Abc   ", s)
+
+	v = true
+	_, err = f.characterToBuf(v, nil)
+	require.Error(t, err)
 }
 
 func TestLogicalToBuf(t *testing.T) {
@@ -100,6 +105,10 @@ func TestLogicalToBuf(t *testing.T) {
 	s, err := f.logicalToBuf(v)
 	require.NoError(t, err)
 	require.Equal(t, "F", s)
+
+	v = "abc"
+	_, err = f.logicalToBuf(v)
+	require.Error(t, err)
 }
 
 func TestDateToBuf(t *testing.T) {
@@ -108,6 +117,10 @@ func TestDateToBuf(t *testing.T) {
 	s, err := f.dateToBuf(v)
 	require.NoError(t, err)
 	require.Equal(t, "20210726", s)
+
+	v = "abc"
+	_, err = f.logicalToBuf(v)
+	require.Error(t, err)
 }
 
 func TestNumericIntToBuf(t *testing.T) {
@@ -116,6 +129,10 @@ func TestNumericIntToBuf(t *testing.T) {
 	s, err := f.numericToBuf(v)
 	require.NoError(t, err)
 	require.Equal(t, "  -123", s)
+
+	v = "abc"
+	_, err = f.logicalToBuf(v)
+	require.Error(t, err)
 }
 
 func TestNumericFloatToBuf(t *testing.T) {
@@ -124,4 +141,12 @@ func TestNumericFloatToBuf(t *testing.T) {
 	s, err := f.numericToBuf(v)
 	require.NoError(t, err)
 	require.Equal(t, "  -123.40", s)
+}
+
+func TestNumericFloatNullToBuf(t *testing.T) {
+	f := newNumericField("name", 9, 2)
+	var v interface{} = 0
+	s, err := f.numericToBuf(v)
+	require.NoError(t, err)
+	require.Equal(t, "     0.00", s)
 }
