@@ -150,3 +150,39 @@ func TestNumericFloatNullToBuf(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "     0.00", s)
 }
+
+// Buffer to value
+
+func TestBufToCharacter(t *testing.T) {
+	f := newCharacterField("name", 6)
+	v, err := f.bufToCharacter([]byte("Abc   "), nil)
+	require.NoError(t, err)
+	require.Equal(t, "Abc", v.(string))
+}
+
+func TestBufToLogical(t *testing.T) {
+	f := newLogicalField("name")
+	v := f.bufToLogical([]byte("T"))
+	require.Equal(t, true, v.(bool))
+}
+
+func TestBufToDate(t *testing.T) {
+	f := newDateField("name")
+	v, err := f.bufToDate([]byte("20210727"))
+	require.NoError(t, err)
+	require.Equal(t, time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC), v.(time.Time))
+}
+
+func TestBufToNumericInt(t *testing.T) {
+	f := newNumericField("name", 5, 0)
+	v, err := f.bufToNumeric([]byte(" -123"))
+	require.NoError(t, err)
+	require.Equal(t, int64(-123), v.(int64))
+}
+
+func TestBufToNumericFloat(t *testing.T) {
+	f := newNumericField("name", 8, 2)
+	v, err := f.bufToNumeric([]byte(" -123.45"))
+	require.NoError(t, err)
+	require.Equal(t, float64(-123.45), v.(float64))
+}

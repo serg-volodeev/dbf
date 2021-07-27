@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"strconv"
-	"time"
 
 	"golang.org/x/text/encoding"
 )
@@ -29,31 +27,24 @@ type Reader struct {
 }
 
 // NewReader returns a new Reader that reads from r.
-func NewReader(r io.Reader) (*Reader, error) {
-	if _, ok := r.(io.Reader); !ok {
-		return nil, fmt.Errorf("parameter %v is not io.Reader", r)
+func NewReader(rd io.Reader) (*Reader, error) {
+	if _, ok := rd.(io.Reader); !ok {
+		return nil, fmt.Errorf("parameter %v is not io.Reader", rd)
 	}
-	rd := &Reader{
+	r := &Reader{
 		header: &header{},
 		fields: NewFields(),
-		reader: bufio.NewReader(r),
+		reader: bufio.NewReader(rd),
 	}
-	if err := rd.initReader(); err != nil {
+	if err := r.header.read(r.reader); err != nil {
 		return nil, err
 	}
-	return rd, nil
-}
-
-func (r *Reader) initReader() error {
-	if err := r.header.read(r.reader); err != nil {
-		return err
-	}
 	if err := r.fields.read(r.reader, r.header.fieldCount()); err != nil {
-		return err
+		return nil, err
 	}
 	// Skip byte header end
 	if _, err := r.reader.Discard(1); err != nil {
-		return err
+		return nil, err
 	}
 	// Create buffer
 	r.buf = make([]byte, int(r.header.RecSize))
@@ -62,7 +53,7 @@ func (r *Reader) initReader() error {
 		cm := charmapByPage(cp)
 		r.decoder = cm.NewDecoder()
 	}
-	return nil
+	return r, nil
 }
 
 // SetCodePage sets the code page if no code page is set in the file header.
@@ -145,51 +136,24 @@ func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 func (r *Reader) fieldValue(index int) (interface{}, error) {
 	var result interface{}
 	var err error
+
 	f := r.fields.items[index]
 	buf := r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
 
 	switch f.Type {
 	case 'C':
-		s := trimRight(buf)
-		if r.decoder != nil && !isASCII(s) {
-			s, err = r.decoder.String(s)
-			if err != nil {
-				return result, err
-			}
-		}
-		result = s
+		result, err = f.bufToCharacter(buf, r.decoder)
 	case 'L':
-		b := buf[0]
-		result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
+		result = f.bufToLogical(buf)
 	case 'D':
-		var d time.Time
-		if !isEmpty(buf) {
-			d, err = time.Parse("20060102", string(buf))
-			if err != nil {
-				return result, err
-			}
-		}
-		result = d
+		result, err = f.bufToDate(buf)
 	case 'N':
-		s := trimLeft(buf)
-		if s == "" {
-			s = "0"
-		}
-		if f.Dec == 0 {
-			n, err := strconv.ParseInt(s, 10, 64)
-			if err != nil {
-				return result, err
-			}
-			result = n
-		} else {
-			n, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				return result, err
-			}
-			result = n
-		}
+		result, err = f.bufToNumeric(buf)
 	default:
 		return result, fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
+	}
+	if err != nil {
+		return result, err
 	}
 	return result, nil
 }

@@ -209,3 +209,64 @@ func (f *field) formatInt(i int64) string {
 func (f *field) formatFloat(n float64) string {
 	return strconv.FormatFloat(n, 'f', int(f.Dec), 64)
 }
+
+// Value to buffer
+
+func (f *field) bufToCharacter(buf []byte, decoder *encoding.Decoder) (interface{}, error) {
+	var result interface{}
+	var err error
+	s := trimRight(buf)
+	if decoder != nil && !isASCII(s) {
+		s, err = decoder.String(s)
+		if err != nil {
+			return result, err
+		}
+	}
+	result = s
+	return result, nil
+}
+
+func (f *field) bufToLogical(buf []byte) interface{} {
+	var result interface{}
+	b := buf[0]
+	result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
+	return result
+}
+
+func (f *field) bufToDate(buf []byte) (interface{}, error) {
+	var result interface{}
+	var d time.Time
+	var err error
+
+	if !isEmpty(buf) {
+		d, err = time.Parse("20060102", string(buf))
+		if err != nil {
+			return result, err
+		}
+	}
+	result = d
+	return result, err
+}
+
+func (f *field) bufToNumeric(buf []byte) (interface{}, error) {
+	var result interface{}
+
+	s := trimLeft(buf)
+	if s == "" {
+		s = "0"
+	}
+	if f.Dec == 0 {
+		n, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return result, err
+		}
+		result = n
+	} else {
+		n, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return result, err
+		}
+		result = n
+	}
+	return result, nil
+}
