@@ -120,40 +120,10 @@ func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 		}
 		return nil, err
 	}
-	if len(dst) != r.fields.Count() {
-		dst = make([]interface{}, r.fields.Count())
-	}
 	var err error
-	for i := range r.fields.items {
-		dst[i], err = r.fieldValue(i)
-		if err != nil {
-			return nil, fmt.Errorf("record %d: field %q: %w", r.recNo, r.fields.items[i].name(), err)
-		}
+	dst, err = r.fields.bufToRecord(r.buf, dst, r.decoder)
+	if err != nil {
+		return nil, fmt.Errorf("record %d: %w", r.recNo, err)
 	}
 	return dst, nil
-}
-
-func (r *Reader) fieldValue(index int) (interface{}, error) {
-	var result interface{}
-	var err error
-
-	f := r.fields.items[index]
-	buf := r.buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
-
-	switch f.Type {
-	case 'C':
-		result, err = f.bytesToCharacter(buf, r.decoder)
-	case 'L':
-		result = f.bytesToLogical(buf)
-	case 'D':
-		result, err = f.bytesToDate(buf)
-	case 'N':
-		result, err = f.bytesToNumeric(buf)
-	default:
-		return result, fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
-	}
-	if err != nil {
-		return result, err
-	}
-	return result, nil
 }

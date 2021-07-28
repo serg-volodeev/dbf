@@ -122,3 +122,33 @@ func (f *Fields) copyRecordToBuf(buf []byte, record []interface{}, encoder *enco
 	}
 	return nil
 }
+
+func (f *Fields) bufToRecord(buf []byte, dst []interface{}, decoder *encoding.Decoder) ([]interface{}, error) {
+	if len(dst) != f.Count() {
+		dst = make([]interface{}, f.Count())
+	}
+	for i, item := range f.items {
+		var v interface{}
+		var err error
+
+		b := item.bytesFromBuf(buf)
+
+		switch item.Type {
+		case 'C':
+			v, err = item.bytesToCharacter(b, decoder)
+		case 'L':
+			v = item.bytesToLogical(b)
+		case 'D':
+			v, err = item.bytesToDate(b)
+		case 'N':
+			v, err = item.bytesToNumeric(b)
+		default:
+			err = fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(item.Type))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("field %q: %w", item.name(), err)
+		}
+		dst[i] = v
+	}
+	return dst, nil
+}

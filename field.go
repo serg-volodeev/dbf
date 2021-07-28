@@ -274,3 +274,7 @@ func (f *field) bytesToNumeric(buf []byte) (interface{}, error) {
 func (f *field) copyValueToBuf(buf []byte, value string) {
 	copy(buf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
 }
+
+func (f *field) bytesFromBuf(buf []byte) []byte {
+	return buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
+}

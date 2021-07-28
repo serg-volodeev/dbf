@@ -69,7 +69,7 @@ func TestFieldsRead(t *testing.T) {
 	require.Equal(t, 1, f.Count())
 }
 
-func TestFieldsWriteBuf(t *testing.T) {
+func TestFieldsCopyRecordToBuf(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 6)
 	f.AddLogicalField("flag")
@@ -86,4 +86,20 @@ func TestFieldsWriteBuf(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, " Abc   T  34", string(buf))
+}
+
+func TestFieldsBufToRecord(t *testing.T) {
+	f := NewFields()
+	f.AddCharacterField("name", 6)
+	f.AddLogicalField("flag")
+	f.AddNumericField("count", 4, 0)
+
+	buf := []byte(" Abc   T  34")
+
+	rec, err := f.bufToRecord(buf, nil, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, "Abc", rec[0].(string))
+	require.Equal(t, true, rec[1].(bool))
+	require.Equal(t, int64(34), rec[2].(int64))
 }
