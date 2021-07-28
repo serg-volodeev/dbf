@@ -120,9 +120,9 @@ func (f *field) checkLen(value string) error {
 	return nil
 }
 
-// Value to buffer
+// Value to string
 
-func (f *field) characterToBuf(value interface{}, encoder *encoding.Encoder) (string, error) {
+func (f *field) characterToString(value interface{}, encoder *encoding.Encoder) (string, error) {
 	var err error
 	v, ok := value.(string)
 	if !ok {
@@ -141,7 +141,7 @@ func (f *field) characterToBuf(value interface{}, encoder *encoding.Encoder) (st
 	return v, nil
 }
 
-func (f *field) logicalToBuf(value interface{}) (string, error) {
+func (f *field) logicalToString(value interface{}) (string, error) {
 	v, ok := value.(bool)
 	if !ok {
 		return "", fmt.Errorf("error convert %v to bool", value)
@@ -152,7 +152,7 @@ func (f *field) logicalToBuf(value interface{}) (string, error) {
 	return "F", nil
 }
 
-func (f *field) dateToBuf(value interface{}) (string, error) {
+func (f *field) dateToString(value interface{}) (string, error) {
 	v, ok := value.(time.Time)
 	if !ok {
 		return "", fmt.Errorf("error convert %v to date", value)
@@ -160,7 +160,7 @@ func (f *field) dateToBuf(value interface{}) (string, error) {
 	return v.Format("20060102"), nil
 }
 
-func (f *field) numericToBuf(value interface{}) (string, error) {
+func (f *field) numericToString(value interface{}) (string, error) {
 	var s string
 
 	switch v := value.(type) {
@@ -210,9 +210,9 @@ func (f *field) formatFloat(n float64) string {
 	return strconv.FormatFloat(n, 'f', int(f.Dec), 64)
 }
 
-// Value to buffer
+// Bytes to value
 
-func (f *field) bufToCharacter(buf []byte, decoder *encoding.Decoder) (interface{}, error) {
+func (f *field) bytesToCharacter(buf []byte, decoder *encoding.Decoder) (interface{}, error) {
 	var result interface{}
 	var err error
 	s := trimRight(buf)
@@ -226,14 +226,14 @@ func (f *field) bufToCharacter(buf []byte, decoder *encoding.Decoder) (interface
 	return result, nil
 }
 
-func (f *field) bufToLogical(buf []byte) interface{} {
+func (f *field) bytesToLogical(buf []byte) interface{} {
 	var result interface{}
 	b := buf[0]
 	result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
 	return result
 }
 
-func (f *field) bufToDate(buf []byte) (interface{}, error) {
+func (f *field) bytesToDate(buf []byte) (interface{}, error) {
 	var result interface{}
 	var d time.Time
 	var err error
@@ -248,7 +248,7 @@ func (f *field) bufToDate(buf []byte) (interface{}, error) {
 	return result, err
 }
 
-func (f *field) bufToNumeric(buf []byte) (interface{}, error) {
+func (f *field) bytesToNumeric(buf []byte) (interface{}, error) {
 	var result interface{}
 
 	s := trimLeft(buf)
@@ -269,4 +269,8 @@ func (f *field) bufToNumeric(buf []byte) (interface{}, error) {
 		result = n
 	}
 	return result, nil
+}
+
+func (f *field) copyValueToBuf(buf []byte, value string) {
+	copy(buf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
 }

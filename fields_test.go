@@ -2,6 +2,7 @@ package dbf
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -66,4 +67,23 @@ func TestFieldsRead(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 1, f.Count())
+}
+
+func TestFieldsWriteBuf(t *testing.T) {
+	f := NewFields()
+	f.AddCharacterField("name", 6)
+	f.AddLogicalField("flag")
+	f.AddNumericField("count", 4, 0)
+
+	buf := []byte(strings.Repeat(" ", int(f.calcRecSize())))
+
+	rec := make([]interface{}, f.Count())
+	rec[0] = "Abc"
+	rec[1] = true
+	rec[2] = 34
+
+	err := f.copyRecordToBuf(buf, rec, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, " Abc   T  34", string(buf))
 }

@@ -84,105 +84,105 @@ func TestFieldWrite(t *testing.T) {
 	require.Equal(t, fieldBytes, buf.Bytes())
 }
 
-// Value to buffer
+// Value to string
 
-func TestCharacterToBuf(t *testing.T) {
+func TestCharacterToString(t *testing.T) {
 	f := newCharacterField("name", 6)
 
 	var v interface{} = "Abc"
-	s, err := f.characterToBuf(v, nil)
+	s, err := f.characterToString(v, nil)
 	require.NoError(t, err)
 	require.Equal(t, "Abc   ", s)
 
 	v = true
-	_, err = f.characterToBuf(v, nil)
+	_, err = f.characterToString(v, nil)
 	require.Error(t, err)
 }
 
-func TestLogicalToBuf(t *testing.T) {
+func TestLogicalToString(t *testing.T) {
 	f := newLogicalField("name")
 	var v interface{} = false
-	s, err := f.logicalToBuf(v)
+	s, err := f.logicalToString(v)
 	require.NoError(t, err)
 	require.Equal(t, "F", s)
 
 	v = "abc"
-	_, err = f.logicalToBuf(v)
+	_, err = f.logicalToString(v)
 	require.Error(t, err)
 }
 
-func TestDateToBuf(t *testing.T) {
+func TestDateToString(t *testing.T) {
 	f := newDateField("name")
 	var v interface{} = time.Date(2021, 7, 26, 0, 0, 0, 0, time.UTC)
-	s, err := f.dateToBuf(v)
+	s, err := f.dateToString(v)
 	require.NoError(t, err)
 	require.Equal(t, "20210726", s)
 
 	v = "abc"
-	_, err = f.logicalToBuf(v)
+	_, err = f.logicalToString(v)
 	require.Error(t, err)
 }
 
-func TestNumericIntToBuf(t *testing.T) {
+func TestNumericIntToString(t *testing.T) {
 	f := newNumericField("name", 6, 0)
 	var v interface{} = -123
-	s, err := f.numericToBuf(v)
+	s, err := f.numericToString(v)
 	require.NoError(t, err)
 	require.Equal(t, "  -123", s)
 
 	v = "abc"
-	_, err = f.logicalToBuf(v)
+	_, err = f.logicalToString(v)
 	require.Error(t, err)
 }
 
-func TestNumericFloatToBuf(t *testing.T) {
+func TestNumericFloatToString(t *testing.T) {
 	f := newNumericField("name", 9, 2)
 	var v interface{} = -123.4
-	s, err := f.numericToBuf(v)
+	s, err := f.numericToString(v)
 	require.NoError(t, err)
 	require.Equal(t, "  -123.40", s)
 }
 
-func TestNumericFloatNullToBuf(t *testing.T) {
+func TestNumericFloatNullToString(t *testing.T) {
 	f := newNumericField("name", 9, 2)
 	var v interface{} = 0
-	s, err := f.numericToBuf(v)
+	s, err := f.numericToString(v)
 	require.NoError(t, err)
 	require.Equal(t, "     0.00", s)
 }
 
-// Buffer to value
+// Bytes to value
 
-func TestBufToCharacter(t *testing.T) {
+func TestBytesToCharacter(t *testing.T) {
 	f := newCharacterField("name", 6)
-	v, err := f.bufToCharacter([]byte("Abc   "), nil)
+	v, err := f.bytesToCharacter([]byte("Abc   "), nil)
 	require.NoError(t, err)
 	require.Equal(t, "Abc", v.(string))
 }
 
-func TestBufToLogical(t *testing.T) {
+func TestBytesToLogical(t *testing.T) {
 	f := newLogicalField("name")
-	v := f.bufToLogical([]byte("T"))
+	v := f.bytesToLogical([]byte("T"))
 	require.Equal(t, true, v.(bool))
 }
 
-func TestBufToDate(t *testing.T) {
+func TestBytesToDate(t *testing.T) {
 	f := newDateField("name")
-	v, err := f.bufToDate([]byte("20210727"))
+	v, err := f.bytesToDate([]byte("20210727"))
 	require.NoError(t, err)
 	require.Equal(t, time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC), v.(time.Time))
 }
 
-func TestBufToNumericInt(t *testing.T) {
+func TestBytesToNumericInt(t *testing.T) {
 	f := newNumericField("name", 5, 0)
-	v, err := f.bufToNumeric([]byte(" -123"))
+	v, err := f.bytesToNumeric([]byte(" -123"))
 	require.NoError(t, err)
 	require.Equal(t, int64(-123), v.(int64))
 }
 
-func TestBufToNumericFloat(t *testing.T) {
+func TestBytesToNumericFloat(t *testing.T) {
 	f := newNumericField("name", 8, 2)
-	v, err := f.bufToNumeric([]byte(" -123.45"))
+	v, err := f.bytesToNumeric([]byte(" -123.45"))
 	require.NoError(t, err)
 	require.Equal(t, float64(-123.45), v.(float64))
 }

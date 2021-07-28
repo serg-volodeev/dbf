@@ -142,13 +142,13 @@ func (r *Reader) fieldValue(index int) (interface{}, error) {
 
 	switch f.Type {
 	case 'C':
-		result, err = f.bufToCharacter(buf, r.decoder)
+		result, err = f.bytesToCharacter(buf, r.decoder)
 	case 'L':
-		result = f.bufToLogical(buf)
+		result = f.bytesToLogical(buf)
 	case 'D':
-		result, err = f.bufToDate(buf)
+		result, err = f.bytesToDate(buf)
 	case 'N':
-		result, err = f.bufToNumeric(buf)
+		result, err = f.bytesToNumeric(buf)
 	default:
 		return result, fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
 	}

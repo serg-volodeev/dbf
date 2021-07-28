@@ -88,49 +88,13 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 // Writes are buffered, so Flush must eventually be called to ensure
 // that the record is written to the underlying io.Writer.
 func (w *Writer) Write(record []interface{}) error {
-	if err := w.writeRecord(record); err != nil {
+	if err := w.fields.copyRecordToBuf(w.buf, record, w.encoder); err != nil {
 		return fmt.Errorf("record %d: %w", w.recCount+1, err)
 	}
-	return nil
-}
-
-func (w *Writer) writeRecord(record []interface{}) error {
-	if len(record) != w.fields.Count() {
-		return fmt.Errorf("the record does not match the number of fields")
-	}
-	for i := range w.fields.items {
-		if err := w.setFieldValue(i, record[i]); err != nil {
-			return fmt.Errorf("field %q: %w", w.fields.items[i].name(), err)
-		}
-	}
 	if _, err := w.writer.Write(w.buf); err != nil {
-		return err
+		return fmt.Errorf("record %d: %w", w.recCount+1, err)
 	}
 	w.recCount++
-	return nil
-}
-
-func (w *Writer) setFieldValue(index int, value interface{}) error {
-	var s string
-	var err error
-	f := w.fields.items[index]
-
-	switch f.Type {
-	case 'C':
-		s, err = f.characterToBuf(value, w.encoder)
-	case 'L':
-		s, err = f.logicalToBuf(value)
-	case 'D':
-		s, err = f.dateToBuf(value)
-	case 'N':
-		s, err = f.numericToBuf(value)
-	default:
-		return fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(f.Type))
-	}
-	if err != nil {
-		return err
-	}
-	copy(w.buf[int(f.Offset):int(f.Offset)+int(f.Len)], s)
 	return nil
 }
 

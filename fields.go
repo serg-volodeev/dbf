@@ -1,15 +1,21 @@
 package dbf
 
-import "io"
+import (
+	"fmt"
+	"io"
+
+	"golang.org/x/text/encoding"
+)
 
 // Fields for creating file structure.
 type Fields struct {
-	items []*field
+	items   []*field
+	curOffs int
 }
 
 // NewFields returns a pointer to a structure Fields.
 func NewFields() *Fields {
-	return &Fields{}
+	return &Fields{curOffs: 1}
 }
 
 // Count returns the number of fields.
@@ -17,24 +23,30 @@ func (f *Fields) Count() int {
 	return len(f.items)
 }
 
+func (f *Fields) addItem(item *field) {
+	item.Offset = uint32(f.curOffs)
+	f.curOffs += int(item.Len)
+	f.items = append(f.items, item)
+}
+
 // AddLogicalField adds a logical field to the structure.
 func (f *Fields) AddLogicalField(name string) {
-	f.items = append(f.items, newLogicalField(name))
+	f.addItem(newLogicalField(name))
 }
 
 // AddDateField adds a date field to the structure.
 func (f *Fields) AddDateField(name string) {
-	f.items = append(f.items, newDateField(name))
+	f.addItem(newDateField(name))
 }
 
 // AddCharacterField adds a character field to the structure.
 func (f *Fields) AddCharacterField(name string, length int) {
-	f.items = append(f.items, newCharacterField(name, length))
+	f.addItem(newCharacterField(name, length))
 }
 
 // AddNumericField adds a numeric field to the structure.
 func (f *Fields) AddNumericField(name string, length, dec int) {
-	f.items = append(f.items, newNumericField(name, length, dec))
+	f.addItem(newNumericField(name, length, dec))
 }
 
 // FieldInfo returns field information by index.
@@ -79,4 +91,34 @@ func (f *Fields) calcRecSize() uint16 {
 		size += int(item.Len)
 	}
 	return uint16(size)
+}
+
+func (f *Fields) copyRecordToBuf(buf []byte, record []interface{}, encoder *encoding.Encoder) error {
+	if len(record) != f.Count() {
+		return fmt.Errorf("the record does not match the number of fields")
+	}
+	for i, item := range f.items {
+		var s string
+		var err error
+
+		value := record[i]
+
+		switch item.Type {
+		case 'C':
+			s, err = item.characterToString(value, encoder)
+		case 'L':
+			s, err = item.logicalToString(value)
+		case 'D':
+			s, err = item.dateToString(value)
+		case 'N':
+			s, err = item.numericToString(value)
+		default:
+			err = fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(item.Type))
+		}
+		if err != nil {
+			return fmt.Errorf("field %q: %w", item.name(), err)
+		}
+		item.copyValueToBuf(buf, s)
+	}
+	return nil
 }
