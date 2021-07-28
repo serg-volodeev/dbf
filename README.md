@@ -79,7 +79,11 @@ for i := uint32(0); i < r.RecordCount(); i++ {
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Println(record)
+    name := record[0].(string)
+    count := record[1].(int64)
+    price := record[2].(float64)
+    date := record[3].(time.Time)
+    fmt.Println(name, count, price, date)
 }
 ```
 
