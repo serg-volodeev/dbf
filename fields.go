@@ -24,9 +24,21 @@ func (f *Fields) Count() int {
 }
 
 func (f *Fields) addItem(item *field) {
+	if f.nameExists(item.name()) {
+		panic(fmt.Errorf("duplicate field name %q", item.name()))
+	}
 	item.Offset = uint32(f.curOffs)
 	f.curOffs += int(item.Len)
 	f.items = append(f.items, item)
+}
+
+func (f *Fields) nameExists(name string) bool {
+	for _, item := range f.items {
+		if item.name() == name {
+			return true
+		}
+	}
+	return false
 }
 
 // AddLogicalField adds a logical field to the structure.
@@ -60,27 +72,21 @@ func (f *Fields) FieldInfo(i int) (name, typ string, length, dec int) {
 }
 
 func (f *Fields) write(w io.Writer) error {
-	offset := 1 // deleted mark
 	for _, item := range f.items {
-		item.Offset = uint32(offset)
 		if err := item.write(w); err != nil {
 			return err
 		}
-		offset += int(item.Len)
 	}
 	return nil
 }
 
 func (f *Fields) read(r io.Reader, count int) error {
-	offset := 1 // deleted mark
 	for i := 0; i < count; i++ {
 		item := &field{}
 		if err := item.read(r); err != nil {
 			return err
 		}
-		item.Offset = uint32(offset)
-		f.items = append(f.items, item)
-		offset += int(item.Len)
+		f.addItem(item)
 	}
 	return nil
 }

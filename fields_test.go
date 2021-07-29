@@ -103,3 +103,9 @@ func TestFieldsBufToRecord(t *testing.T) {
 	require.Equal(t, true, rec[1].(bool))
 	require.Equal(t, int64(34), rec[2].(int64))
 }
+
+func TestFieldsDuplicateName(t *testing.T) {
+	f := NewFields()
+	f.AddCharacterField("flag", 6)
+	require.Panics(t, func() { f.AddLogicalField("flag") })
+}
