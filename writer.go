@@ -68,7 +68,7 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 		w.header.setCodePage(codePage)
 	}
 	w.header.setFieldCount(w.fields.Count())
-	w.header.RecSize = w.fields.calcRecSize()
+	w.header.RecSize = uint16(w.fields.recSize)
 	if err := w.header.write(w.writer); err != nil {
 		return nil, err
 	}

@@ -75,7 +75,7 @@ func TestFieldsCopyRecordToBuf(t *testing.T) {
 	f.AddLogicalField("flag")
 	f.AddNumericField("count", 4, 0)
 
-	buf := []byte(strings.Repeat(" ", int(f.calcRecSize())))
+	buf := []byte(strings.Repeat(" ", f.recSize))
 
 	rec := make([]interface{}, f.Count())
 	rec[0] = "Abc"

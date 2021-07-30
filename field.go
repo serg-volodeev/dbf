@@ -36,7 +36,6 @@ func newLogicalField(name string) *field {
 	f.setName(name)
 	f.Type = 'L'
 	f.Len = 1
-	f.Dec = 0
 	return f
 }
 
@@ -45,7 +44,6 @@ func newDateField(name string) *field {
 	f.setName(name)
 	f.Type = 'D'
 	f.Len = 8
-	f.Dec = 0
 	return f
 }
 
@@ -57,7 +55,6 @@ func newCharacterField(name string, length int) *field {
 	f.setName(name)
 	f.Type = 'C'
 	f.Len = byte(length)
-	f.Dec = 0
 	return f
 }
 

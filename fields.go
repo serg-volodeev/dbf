@@ -10,12 +10,12 @@ import (
 // Fields for creating file structure.
 type Fields struct {
 	items   []*field
-	curOffs int
+	recSize int
 }
 
 // NewFields returns a pointer to a structure Fields.
 func NewFields() *Fields {
-	return &Fields{curOffs: 1}
+	return &Fields{recSize: 1}
 }
 
 // Count returns the number of fields.
@@ -27,8 +27,8 @@ func (f *Fields) addItem(item *field) {
 	if f.nameExists(item.name()) {
 		panic(fmt.Errorf("duplicate field name %q", item.name()))
 	}
-	item.Offset = uint32(f.curOffs)
-	f.curOffs += int(item.Len)
+	item.Offset = uint32(f.recSize)
+	f.recSize += int(item.Len)
 	f.items = append(f.items, item)
 }
 
@@ -89,14 +89,6 @@ func (f *Fields) read(r io.Reader, count int) error {
 		f.addItem(item)
 	}
 	return nil
-}
-
-func (f *Fields) calcRecSize() uint16 {
-	size := 1 // deleted mark
-	for _, item := range f.items {
-		size += int(item.Len)
-	}
-	return uint16(size)
 }
 
 func (f *Fields) copyRecordToBuf(buf []byte, record []interface{}, encoder *encoding.Encoder) error {
