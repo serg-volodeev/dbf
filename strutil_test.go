@@ -1,41 +1,96 @@
 package dbf
 
 import (
-	"strconv"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestPadRight(t *testing.T) {
-	require.Equal(t, "Abc   ", padRight("Abc", 6))
-	require.Equal(t, "Abc", padRight("Abc", 2))
+func Test_padRight(t *testing.T) {
+	tests := []struct {
+		s     string
+		width int
+		want  string
+	}{
+		{s: "Abc", width: 6, want: "Abc   "},
+		{s: "Abc", width: 2, want: "Abc"},
+		{s: "", width: 3, want: "   "},
+		{s: "  Abc", width: 7, want: "  Abc  "},
+	}
+	for _, tc := range tests {
+		got := padRight(tc.s, tc.width)
+		if got != tc.want {
+			t.Errorf("padRight(%#v, %#v), want: %#v, got: %#v", tc.s, tc.width, tc.want, got)
+		}
+	}
 }
 
-func TestPadLeft(t *testing.T) {
-	require.Equal(t, "   Abc", padLeft("Abc", 6))
-	require.Equal(t, "Abc", padLeft("Abc", 2))
+func Test_padLeft(t *testing.T) {
+	tests := []struct {
+		s     string
+		width int
+		want  string
+	}{
+		{s: "Abc", width: 6, want: "   Abc"},
+		{s: "Abc", width: 2, want: "Abc"},
+		{s: "", width: 3, want: "   "},
+		{s: "  Abc", width: 7, want: "    Abc"},
+	}
+	for _, tc := range tests {
+		got := padLeft(tc.s, tc.width)
+		if got != tc.want {
+			t.Errorf("padLeft(%#v, %#v), want: %#v, got: %#v", tc.s, tc.width, tc.want, got)
+		}
+	}
 }
 
-func TestIsASCII(t *testing.T) {
-	require.Equal(t, true, isASCII("Abc"))
-	require.Equal(t, false, isASCII("AbЖc"))
+func Test_isASCII(t *testing.T) {
+	tests := []struct {
+		s    string
+		want bool
+	}{
+		{s: "Abc", want: true},
+		{s: "AbЖc", want: false},
+		{s: "", want: true},
+	}
+	for _, tc := range tests {
+		got := isASCII(tc.s)
+		if got != tc.want {
+			t.Errorf("isASCII(%#v), want: %#v, got: %#v", tc.s, tc.want, got)
+		}
+	}
 }
 
-func TestTrimRight(t *testing.T) {
-	require.Equal(t, "Abc", trimRight([]byte("Abc")))
-	require.Equal(t, "Abc", trimRight([]byte("Abc   ")))
-	require.Equal(t, "", trimRight([]byte("   ")))
+func Test_trimRight(t *testing.T) {
+	tests := []struct {
+		b    []byte
+		want string
+	}{
+		{b: []byte("Abc"), want: "Abc"},
+		{b: []byte("Abc   "), want: "Abc"},
+		{b: []byte(""), want: ""},
+		{b: []byte("   "), want: ""},
+	}
+	for _, tc := range tests {
+		got := trimRight(tc.b)
+		if got != tc.want {
+			t.Errorf("trimRight(%#v), want: %#v, got: %#v", string(tc.b), tc.want, got)
+		}
+	}
 }
 
-func TestTrimLeft(t *testing.T) {
-	require.Equal(t, "Abc", trimLeft([]byte("Abc")))
-	require.Equal(t, "Abc", trimLeft([]byte("    Abc")))
-	require.Equal(t, "", trimLeft([]byte("   ")))
-}
-
-func TestParse(t *testing.T) {
-	n, err := strconv.ParseFloat("-.1", 64)
-	require.NoError(t, err)
-	require.Equal(t, float64(-0.1), n)
+func Test_trimLeft(t *testing.T) {
+	tests := []struct {
+		b    []byte
+		want string
+	}{
+		{b: []byte("Abc"), want: "Abc"},
+		{b: []byte("   Abc"), want: "Abc"},
+		{b: []byte(""), want: ""},
+		{b: []byte("   "), want: ""},
+	}
+	for _, tc := range tests {
+		got := trimLeft(tc.b)
+		if got != tc.want {
+			t.Errorf("trimLeft(%#v), want: %#v, got: %#v", string(tc.b), tc.want, got)
+		}
+	}
 }
