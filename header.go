@@ -53,6 +53,9 @@ func (h *header) setModDate(d time.Time) {
 // Field count
 
 func (h *header) fieldCount() int {
+	if h.DataOffset == 0 {
+		return 0
+	}
 	return (int(h.DataOffset) - headerSize - 1) / fieldSize
 }
 

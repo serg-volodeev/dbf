@@ -15,11 +15,29 @@ func currentDate() time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
-func Test_header_newHeader(t *testing.T) {
+func Test_newHeader(t *testing.T) {
 	h := newHeader()
 
-	if h.Id != 0x03 || h.fieldCount() != -1 || h.modDate() != currentDate() {
-		t.Errorf("Error newHeader():\ngot: %#v", h)
+	tpl := "newHeader(): %s: want: %v, got: %v"
+
+	if h.Id != 0x03 {
+		t.Errorf(tpl, "h.Id", 0x03, h.Id)
+	}
+	if h.RecCount != 0 {
+		t.Errorf(tpl, "h.RecCount", 0, h.RecCount)
+	}
+	if h.fieldCount() != 0 {
+		t.Errorf(tpl, "h.fieldCount()", 0, h.fieldCount())
+	}
+	if h.RecSize != 0 {
+		t.Errorf(tpl, "h.RecSize", 0, h.RecSize)
+	}
+	if h.codePage() != 0 {
+		t.Errorf(tpl, "h.codePage()", 0, h.codePage())
+	}
+	d := currentDate()
+	if h.modDate() != d {
+		t.Errorf(tpl, "h.modDate()", d, h.modDate())
 	}
 }
 
@@ -32,10 +50,13 @@ func Test_header_write(t *testing.T) {
 	h.setCodePage(866)
 
 	buf := bytes.NewBuffer(nil)
-	h.write(buf)
+	err := h.write(buf)
 
+	if err != nil {
+		t.Errorf("header.write(): %v", err)
+	}
 	if !reflect.DeepEqual(buf.Bytes(), headerBytes) {
-		t.Errorf("Error header.write():\nwant: %#v\ngot : %#v", headerBytes, buf.Bytes())
+		t.Errorf("header.write():\nwant: %#v\ngot : %#v", headerBytes, buf.Bytes())
 	}
 }
 
