@@ -4,35 +4,54 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestFieldsNewFields(t *testing.T) {
+func Test_NewFields(t *testing.T) {
 	f := NewFields()
-	require.Equal(t, 0, f.Count())
+
+	if f.Count() != 0 {
+		t.Errorf("NewFields(): f.Count(): want: %v, got: %v", 0, f.Count())
+	}
+	if f.recSize != 1 {
+		t.Errorf("NewFields(): f.recSize: want: %v, got: %v", 1, f.recSize)
+	}
 }
 
-func TestFieldsAddField(t *testing.T) {
+func Test_Fields_add_fields(t *testing.T) {
 	f := NewFields()
 	f.AddNumericField("price", 12, 2)
 	f.AddLogicalField("flag")
 	f.AddDateField("date")
 	f.AddCharacterField("name", 25)
-	require.Equal(t, 4, f.Count())
+
+	if f.Count() != 4 {
+		t.Errorf("add fields: f.Count(): want: %v, got: %v", 4, f.Count())
+	}
+	if f.recSize != 47 {
+		t.Errorf("NewFields(): f.recSize: want: %v, got: %v", 47, f.recSize)
+	}
 }
 
-func TestFieldsFieldInfo(t *testing.T) {
+func Test_Fields_FieldInfo(t *testing.T) {
 	f := NewFields()
 	f.AddDateField("date")
 	name, typ, length, dec := f.FieldInfo(0)
-	require.Equal(t, "DATE", name)
-	require.Equal(t, "D", typ)
-	require.Equal(t, 8, length)
-	require.Equal(t, 0, dec)
+
+	if name != "DATE" {
+		t.Errorf("Fields.FieldInfo(): name: want: %#v, got: %#v", "DATE", name)
+	}
+	if typ != "D" {
+		t.Errorf("Fields.FieldInfo(): typ: want: %#v, got: %#v", "D", typ)
+	}
+	if length != 8 {
+		t.Errorf("Fields.FieldInfo(): length: want: %#v, got: %#v", 8, length)
+	}
+	if dec != 0 {
+		t.Errorf("Fields.FieldInfo(): dec: want: %#v, got: %#v", 0, dec)
+	}
 }
 
-func TestFieldsWrite(t *testing.T) {
+func Test_Fields_write(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 14)
 	f.AddDateField("date")
@@ -40,21 +59,15 @@ func TestFieldsWrite(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	err := f.write(buf)
 
-	require.NoError(t, err)
-	b := buf.Bytes()
-	require.Equal(t, 64, len(b))
-	require.Equal(t, byte('N'), b[0])
-	require.Equal(t, byte('A'), b[1])
-	require.Equal(t, byte('M'), b[2])
-	require.Equal(t, byte('E'), b[3])
-	require.Equal(t, byte('C'), b[11])
-	require.Equal(t, byte(0), b[12])
-	require.Equal(t, byte(14), b[16])
-	require.Equal(t, byte('D'), b[32])
-	require.Equal(t, byte('A'), b[33])
+	if err != nil {
+		t.Errorf("Fields.write(): %v", err)
+	}
+	if len(buf.Bytes()) != 64 {
+		t.Errorf("Fields.write(): len(buf): want: %v, got: %v", 64, len(buf.Bytes()))
+	}
 }
 
-func TestFieldsRead(t *testing.T) {
+func Test_Fields_read(t *testing.T) {
 	b := make([]byte, fieldSize)
 	copy(b[:], "NAME")
 	b[11] = 'C'
@@ -65,11 +78,15 @@ func TestFieldsRead(t *testing.T) {
 	f := NewFields()
 	err := f.read(r, 1)
 
-	require.NoError(t, err)
-	require.Equal(t, 1, f.Count())
+	if err != nil {
+		t.Errorf("Fields.read(): %v", err)
+	}
+	if f.Count() != 1 {
+		t.Errorf("Fields.read(): f.Count(): want: %v, got: %v", 1, f.Count())
+	}
 }
 
-func TestFieldsCopyRecordToBuf(t *testing.T) {
+func Test_Fields_copyRecordToBuf(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 6)
 	f.AddLogicalField("flag")
@@ -81,14 +98,20 @@ func TestFieldsCopyRecordToBuf(t *testing.T) {
 	rec[0] = "Abc"
 	rec[1] = true
 	rec[2] = 34
+	want := " Abc   T  34"
 
 	err := f.copyRecordToBuf(buf, rec, nil)
 
-	require.NoError(t, err)
-	require.Equal(t, " Abc   T  34", string(buf))
+	if err != nil {
+		t.Errorf("Fields.copyRecordToBuf(): %v", err)
+	}
+	if string(buf) != want {
+		t.Errorf("Fields.copyRecordToBuf(): want: %#v, got: %#v", want, string(buf))
+	}
+
 }
 
-func TestFieldsBufToRecord(t *testing.T) {
+func Test_Fields_bufToRecord(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 6)
 	f.AddLogicalField("flag")
@@ -98,14 +121,27 @@ func TestFieldsBufToRecord(t *testing.T) {
 
 	rec, err := f.bufToRecord(buf, nil, nil)
 
-	require.NoError(t, err)
-	require.Equal(t, "Abc", rec[0].(string))
-	require.Equal(t, true, rec[1].(bool))
-	require.Equal(t, int64(34), rec[2].(int64))
+	if err != nil {
+		t.Errorf("Fields.bufToRecord(): %v", err)
+	}
+	if rec[0].(string) != "Abc" {
+		t.Errorf("Fields.bufToRecord(): rec[0]: want: %#v, got: %#v", "Abc", rec[0])
+	}
+	if rec[1].(bool) != true {
+		t.Errorf("Fields.bufToRecord(): rec[1]: want: %#v, got: %#v", true, rec[1])
+	}
+	if rec[2].(int64) != 34 {
+		t.Errorf("Fields.bufToRecord(): rec[2]: want: %#v, got: %#v", 34, rec[2])
+	}
 }
 
-func TestFieldsDuplicateName(t *testing.T) {
+func Test_Fields_check_duplicate(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Fields add field duplicate: not panic")
+		}
+	}()
 	f := NewFields()
 	f.AddCharacterField("flag", 6)
-	require.Panics(t, func() { f.AddLogicalField("flag") })
+	f.AddLogicalField("flag")
 }
