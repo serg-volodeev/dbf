@@ -3,28 +3,40 @@ package dbf
 import (
 	"io"
 	"os"
-	"strings"
+	"reflect"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestReaderNewReaderEmptyReader(t *testing.T) {
+func Test_NewReader_nil(t *testing.T) {
 	r, err := NewReader(nil)
-	require.Error(t, err)
-	require.Nil(t, r)
+	if err == nil {
+		t.Errorf("NewReader(nil): require error")
+	}
+	if r != nil {
+		t.Errorf("NewReader(nil): require nil reader")
+	}
 }
 
-func TestReaderNewReader(t *testing.T) {
-	f, err := os.Open("./testdata/rec3.dbf")
-	require.NoError(t, err)
+func Test_NewReader(t *testing.T) {
+	fname := "./testdata/rec3.dbf"
+	f, err := os.Open(fname)
+	if err != nil {
+		t.Errorf("os.Open(%q): %v", fname, err)
+	}
 	defer f.Close()
 
 	r, err := NewReader(f)
-	require.NoError(t, err)
-	require.Equal(t, uint32(3), r.RecordCount())
-	require.Equal(t, 866, r.CodePage())
+
+	if err != nil {
+		t.Errorf("NewReader(): %v", err)
+	}
+	if r.RecordCount() != 3 {
+		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 3, r.RecordCount())
+	}
+	if r.CodePage() != 866 {
+		t.Errorf("NewReader(): r.CodePage(): want: %v, got: %v", 866, r.CodePage())
+	}
 
 	testFields := []struct {
 		Name, Type string
@@ -37,148 +49,131 @@ func TestReaderNewReader(t *testing.T) {
 		{"DATE", "D", 8, 0},
 	}
 	fields := r.Fields()
-	require.Equal(t, len(testFields), fields.Count())
+
+	if fields.Count() != len(testFields) {
+		t.Errorf("NewReader(): fields.Count(): want %v, got %v", len(testFields), fields.Count())
+	}
+
 	for i, f := range testFields {
 		name, typ, length, dec := fields.FieldInfo(i)
-		require.Equal(t, f.Name, name)
-		require.Equal(t, f.Type, typ)
-		require.Equal(t, f.Len, length)
-		require.Equal(t, f.Dec, dec)
+
+		if f.Name != name {
+			t.Errorf("NewReader(): fields.FieldInfo(%d): name: want: %#v, got: %#v", i, f.Name, name)
+		}
+		if f.Type != typ {
+			t.Errorf("NewReader(): fields.FieldInfo(%d): typ: want: %#v, got: %#v", i, f.Type, typ)
+		}
+		if f.Len != length {
+			t.Errorf("NewReader(): fields.FieldInfo(%d): length: want: %#v, got: %#v", i, f.Len, length)
+		}
+		if f.Dec != dec {
+			t.Errorf("NewReader(): fields.FieldInfo(%d): dec: want: %#v, got: %#v", i, f.Dec, dec)
+		}
 	}
 }
 
-func TestReaderReadFileEmpty(t *testing.T) {
-	f, err := os.Open("./testdata/rec0.dbf")
-	require.NoError(t, err)
+func Test_Reader_Read_file_empty(t *testing.T) {
+	fname := "./testdata/rec0.dbf"
+	f, err := os.Open(fname)
+	if err != nil {
+		t.Errorf("os.Open(%q): %v", fname, err)
+	}
 	defer f.Close()
 
 	r, err := NewReader(f)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewReader(): %v", err)
+	}
+	if r.RecordCount() != 0 {
+		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 0, r.RecordCount())
+	}
 
 	rec, err := r.Read()
-	require.Error(t, err)
-	require.Equal(t, io.EOF, err)
-	require.Equal(t, 0, len(rec))
-	require.Equal(t, uint32(0), r.header.RecCount)
-	require.Equal(t, 5, r.fields.Count())
+
+	if err != io.EOF {
+		t.Errorf("Read(): err: want: %v, got: %v", io.EOF, err)
+	}
+	if len(rec) != 0 {
+		t.Errorf("Read(): len(rec): want: %v, got: %v", 0, len(rec))
+	}
 }
 
-func TestReaderReadRecordEmpty(t *testing.T) {
-	f, err := os.Open("./testdata/rec1.dbf")
-	require.NoError(t, err)
+func Test_Reader_Read_record_blank(t *testing.T) {
+	fname := "./testdata/rec1.dbf"
+	f, err := os.Open(fname)
+	if err != nil {
+		t.Errorf("os.Open(%q): %v", fname, err)
+	}
 	defer f.Close()
 
 	r, err := NewReader(f)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewReader(): %v", err)
+	}
+	if r.RecordCount() != 1 {
+		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 1, r.RecordCount())
+	}
 
 	rec, err := r.Read()
-	require.NoError(t, err)
-	require.Equal(t, 5, len(rec))
-	require.Equal(t, "", rec[0].(string))
-	require.Equal(t, false, rec[1].(bool))
-	require.Equal(t, int64(0), rec[2].(int64))
-	require.Equal(t, float64(0), rec[3].(float64))
+
+	if err != nil {
+		t.Errorf("Read(): %v", err)
+	}
+	if len(rec) != 5 {
+		t.Errorf("Read(): len(rec): want: %v, got: %v", 0, len(rec))
+	}
+	if rec[0].(string) != "" {
+		t.Errorf("Read(): rec[0]: want: %#v, got: %#v", "", rec[0])
+	}
+	if rec[1].(bool) != false {
+		t.Errorf("Read(): rec[1]: want: %#v, got: %#v", false, rec[1])
+	}
+	if rec[2].(int64) != 0 {
+		t.Errorf("Read(): rec[2]: want: %#v, got: %#v", 0, rec[2])
+	}
+	if rec[3].(float64) != 0 {
+		t.Errorf("Read(): rec[3]: want: %#v, got: %#v", 0, rec[3])
+	}
 	var d time.Time
-	require.Equal(t, d, rec[4].(time.Time))
+	if rec[4].(time.Time) != d {
+		t.Errorf("Read(): rec[4]: want: %v, got: %v", d, rec[4])
+	}
 }
 
-func TestReaderReadRecords(t *testing.T) {
-	f, err := os.Open("./testdata/rec3.dbf")
-	require.NoError(t, err)
+func Test_Reader_Read_records(t *testing.T) {
+	fname := "./testdata/rec3.dbf"
+	f, err := os.Open(fname)
+	if err != nil {
+		t.Errorf("os.Open(%q): %v", fname, err)
+	}
 	defer f.Close()
 
 	r, err := NewReader(f)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewReader(): %v", err)
+	}
+	if r.RecordCount() != 3 {
+		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 3, r.RecordCount())
+	}
 
-	rec, err := r.Read()
-	require.NoError(t, err)
-	require.Equal(t, "Abc", rec[0].(string))
-	require.Equal(t, true, rec[1].(bool))
-	require.Equal(t, int64(123), rec[2].(int64))
-	require.Equal(t, float64(123.45), rec[3].(float64))
+	var d time.Time
 	d1 := time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
-	require.Equal(t, d1, rec[4].(time.Time))
 
-	rec, err = r.Read()
-	require.NoError(t, err)
-	require.Equal(t, "", rec[0].(string))
-	require.Equal(t, false, rec[1].(bool))
-	require.Equal(t, int64(0), rec[2].(int64))
-	require.Equal(t, float64(0), rec[3].(float64))
-	var d time.Time
-	require.Equal(t, d, rec[4].(time.Time))
-
-	rec, err = r.Read()
-	require.NoError(t, err)
-	require.Equal(t, "Мышь", rec[0].(string))
-	require.Equal(t, false, rec[1].(bool))
-	require.Equal(t, int64(-321), rec[2].(int64))
-	require.Equal(t, float64(-54.32), rec[3].(float64))
-	d1 = time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
-	require.Equal(t, d1, rec[4].(time.Time))
-
-	rec, err = r.Read()
-	require.Error(t, err)
-	require.Equal(t, io.EOF, err)
-	require.Equal(t, 0, len(rec))
-}
-func BenchmarkBoolValue1(b *testing.B) {
-	buf := []byte{'T'}
-	for i := 0; i < b.N; i++ {
-		s := string(buf)
-		if s[0] != 'T' {
-			b.Fatalf("Fail bool value 1")
-		}
+	testRecords := [][]interface{}{
+		{"Abc", true, int64(123), float64(123.45), d1},
+		{"", false, int64(0), float64(0), d},
+		{"Мышь", false, int64(-321), float64(-54.32), d1},
 	}
-}
 
-func BenchmarkBoolValue2(b *testing.B) {
-	buf := []byte{'T'}
-	for i := 0; i < b.N; i++ {
-		// s := string(buf)
-		if buf[0] != 'T' {
-			b.Fatalf("Fail bool value 2")
+	for i := uint32(0); i < r.RecordCount(); i++ {
+		want := testRecords[int(i)]
+		got, err := r.Read()
+
+		if err != nil {
+			t.Errorf("Read(): %v", err)
 		}
-	}
-}
-
-func BenchmarkStringValue1(b *testing.B) {
-	buf := []byte("Abc   ")
-	for i := 0; i < b.N; i++ {
-		s := string(buf)
-		s = strings.TrimRight(s, " ")
-		if s != "Abc" {
-			b.Fatalf("Fail string value 1")
-		}
-	}
-}
-
-func BenchmarkStringValue2(b *testing.B) {
-	buf := []byte("Abc   ")
-	for i := 0; i < b.N; i++ {
-		// s := string(bytes.TrimRight(buf, " "))
-		s := trimRight(buf)
-		if s != "Abc" {
-			b.Fatalf("Fail string value %q", s)
-		}
-	}
-}
-
-func BenchmarkStringEmpty1(b *testing.B) {
-	buf := []byte("        ")
-	for i := 0; i < b.N; i++ {
-		s := string(buf)
-		if strings.Trim(s, " ") != "" {
-			b.Fatalf("Fail")
-		}
-	}
-}
-
-func BenchmarkStringEmpty2(b *testing.B) {
-	buf := []byte("        ")
-	for i := 0; i < b.N; i++ {
-		if !isEmpty(buf) {
-			b.Fatalf("Fail")
+		if !reflect.DeepEqual(want, got) {
+			t.Errorf("Read():\nwant: %v\ngot : %v", want, got)
 		}
 	}
 }

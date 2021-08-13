@@ -138,7 +138,7 @@ func Test_Fields_bufToRecord(t *testing.T) {
 func Test_Fields_check_duplicate(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Errorf("Fields add field duplicate: not panic")
+			t.Errorf("Fields: add field duplicate: not panic")
 		}
 	}()
 	f := NewFields()
