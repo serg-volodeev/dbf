@@ -3,11 +3,10 @@ package dbf
 import (
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
 func Test_Writer_prefix_error(t *testing.T) {
@@ -17,9 +16,12 @@ func Test_Writer_prefix_error(t *testing.T) {
 	}
 }
 
-func TestWriterWriteRecords(t *testing.T) {
-	f, err := os.Create("./testdata/test.dbf")
-	require.NoError(t, err)
+func Test_Writer_write_records(t *testing.T) {
+	fname := "./testdata/test.dbf"
+	f, err := os.Create(fname)
+	if err != nil {
+		t.Errorf("os.Create(%s): %v", fname, err)
+	}
 	defer f.Close()
 
 	fields := NewFields()
@@ -30,7 +32,9 @@ func TestWriterWriteRecords(t *testing.T) {
 	fields.AddDateField("DATE")
 
 	w, err := NewWriter(f, fields, 866)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewWriter(): %v", err)
+	}
 
 	var d time.Time
 	d1 := time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
@@ -43,15 +47,22 @@ func TestWriterWriteRecords(t *testing.T) {
 
 	for i := range records {
 		err := w.Write(records[i])
-		require.NoError(t, err)
+		if err != nil {
+			t.Errorf("Write(%v): %v", records[i], err)
+		}
 	}
 
 	err = w.Flush()
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("Flush(): %v", err)
+	}
 
-	testBytes := readFile("./testdata/test.dbf")
-	goldBytes := readFile("./testdata/rec4.dbf")
-	require.Equal(t, goldBytes, testBytes)
+	got := readFile("./testdata/test.dbf")
+	want := readFile("./testdata/rec4.dbf")
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("dbf file bytes:\nwant: %#v\ngot : %#v", want, got)
+	}
 }
 
 func readFile(name string) []byte {
