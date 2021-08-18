@@ -28,6 +28,14 @@ type Reader struct {
 
 // NewReader returns a new Reader that reads from r.
 func NewReader(rd io.Reader) (*Reader, error) {
+	r, err := newReader(rd)
+	if err != nil {
+		return nil, fmt.Errorf("dbf.NewReader: %w", err)
+	}
+	return r, nil
+}
+
+func newReader(rd io.Reader) (*Reader, error) {
 	if _, ok := rd.(io.Reader); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.Reader", rd)
 	}
@@ -76,7 +84,7 @@ func NewReader(rd io.Reader) (*Reader, error) {
 func (r *Reader) SetCodePage(cp int) error {
 	cm := charmapByPage(cp)
 	if cm == nil {
-		return fmt.Errorf("unsupported code page %d", cp)
+		return fmt.Errorf("dbf.SetCodePage: unsupported code page %d", cp)
 	}
 	r.decoder = cm.NewDecoder()
 	r.header.setCodePage(cp)
@@ -109,7 +117,13 @@ func (r *Reader) Read() (record []interface{}, err error) {
 	} else {
 		record, err = r.readRecord(nil)
 	}
-	return record, err
+	if err != nil {
+		if err == io.EOF {
+			return nil, err
+		}
+		return nil, fmt.Errorf("dbf.Read: %w", err)
+	}
+	return record, nil
 }
 
 func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {

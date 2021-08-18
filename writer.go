@@ -47,8 +47,19 @@ type Writer struct {
 //
 // If the codePage parameter is zero, the text fields will not be encoded.
 func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error) {
+	w, err := newWriter(ws, fields, codePage)
+	if err != nil {
+		return nil, fmt.Errorf("dbf.NewWriter: %w", err)
+	}
+	return w, nil
+}
+
+func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error) {
 	if _, ok := ws.(io.WriteSeeker); !ok {
 		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
+	}
+	if fields.err != nil {
+		return nil, fields.err
 	}
 	if fields.Count() == 0 {
 		return nil, fmt.Errorf("no fields defined")
@@ -69,6 +80,7 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	}
 	w.header.setFieldCount(w.fields.Count())
 	w.header.RecSize = uint16(w.fields.recSize)
+
 	if err := w.header.write(w.writer); err != nil {
 		return nil, err
 	}
@@ -88,11 +100,18 @@ func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 // Writes are buffered, so Flush must eventually be called to ensure
 // that the record is written to the underlying io.Writer.
 func (w *Writer) Write(record []interface{}) error {
+	if err := w.writeRecord(record); err != nil {
+		return fmt.Errorf("dbf.Write: record %d: %w", w.recCount+1, err)
+	}
+	return nil
+}
+
+func (w *Writer) writeRecord(record []interface{}) error {
 	if err := w.fields.copyRecordToBuf(w.buf, record, w.encoder); err != nil {
-		return fmt.Errorf("record %d: %w", w.recCount+1, err)
+		return err
 	}
 	if _, err := w.writer.Write(w.buf); err != nil {
-		return fmt.Errorf("record %d: %w", w.recCount+1, err)
+		return err
 	}
 	w.recCount++
 	return nil
@@ -100,6 +119,13 @@ func (w *Writer) Write(record []interface{}) error {
 
 // Flush writes any buffered data to the underlying io.Writer.
 func (w *Writer) Flush() error {
+	if err := w.flush(); err != nil {
+		return fmt.Errorf("dbf.Flush: %w", err)
+	}
+	return nil
+}
+
+func (w *Writer) flush() error {
 	if err := w.writer.WriteByte(fileEnd); err != nil {
 		return err
 	}

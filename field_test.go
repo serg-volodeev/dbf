@@ -12,7 +12,7 @@ import (
 // New field
 
 func Test_newLogicalField(t *testing.T) {
-	f := newLogicalField("Flag")
+	f, _ := newLogicalField("Flag")
 
 	tpl := "newLogicalField('Flag'): %s: want: %v, got: %v"
 
@@ -31,7 +31,7 @@ func Test_newLogicalField(t *testing.T) {
 }
 
 func Test_newDateField(t *testing.T) {
-	f := newDateField("Date")
+	f, _ := newDateField("Date")
 
 	tpl := "newDateField('Date'): %s: want: %v, got: %v"
 
@@ -50,7 +50,7 @@ func Test_newDateField(t *testing.T) {
 }
 
 func Test_newCharacterField(t *testing.T) {
-	f := newCharacterField("Name", 25)
+	f, _ := newCharacterField("Name", 25)
 
 	tpl := "newCharacterField('Name', 25): %s: want: %v, got: %v"
 
@@ -69,7 +69,7 @@ func Test_newCharacterField(t *testing.T) {
 }
 
 func Test_newNumericField(t *testing.T) {
-	f := newNumericField("Price", 12, 2)
+	f, _ := newNumericField("Price", 12, 2)
 
 	tpl := "newNumericField('Price', 12, 2): %s: want: %v, got: %v"
 
@@ -136,7 +136,7 @@ func Test_field_read(t *testing.T) {
 }
 
 func Test_field_write(t *testing.T) {
-	f := newCharacterField("name", 14)
+	f, _ := newCharacterField("name", 14)
 
 	buf := bytes.NewBuffer(nil)
 	err := f.write(buf)
@@ -152,7 +152,7 @@ func Test_field_write(t *testing.T) {
 // Value to string
 
 func Test_field_characterToString(t *testing.T) {
-	f := newCharacterField("name", 6)
+	f, _ := newCharacterField("name", 6)
 
 	tests := []struct {
 		value   interface{}
@@ -177,7 +177,7 @@ func Test_field_characterToString(t *testing.T) {
 }
 
 func Test_logicalToString(t *testing.T) {
-	f := newLogicalField("name")
+	f, _ := newLogicalField("name")
 
 	tests := []struct {
 		value   interface{}
@@ -202,7 +202,7 @@ func Test_logicalToString(t *testing.T) {
 }
 
 func Test_dateToString(t *testing.T) {
-	f := newDateField("name")
+	f, _ := newDateField("name")
 	d := time.Date(2021, 7, 26, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -227,16 +227,19 @@ func Test_dateToString(t *testing.T) {
 }
 
 func Test_numericToString(t *testing.T) {
+	field1, _ := newNumericField("name", 6, 0)
+	field2, _ := newNumericField("name", 9, 2)
+
 	tests := []struct {
 		field   *field
 		value   interface{}
 		wantRes string
 		isErr   bool
 	}{
-		{field: newNumericField("name", 6, 0), value: -123, wantRes: "  -123", isErr: false},
-		{field: newNumericField("name", 6, 0), value: "abc", wantRes: "", isErr: true},
-		{field: newNumericField("name", 9, 2), value: -123.4, wantRes: "  -123.40", isErr: false},
-		{field: newNumericField("name", 9, 2), value: 0, wantRes: "     0.00", isErr: false},
+		{field: field1, value: -123, wantRes: "  -123", isErr: false},
+		{field: field1, value: "abc", wantRes: "", isErr: true},
+		{field: field2, value: -123.4, wantRes: "  -123.40", isErr: false},
+		{field: field2, value: 0, wantRes: "     0.00", isErr: false},
 	}
 	for _, tc := range tests {
 		gotRes, err := tc.field.numericToString(tc.value)
@@ -254,7 +257,7 @@ func Test_numericToString(t *testing.T) {
 // Bytes to value
 
 func Test_bytesToCharacter(t *testing.T) {
-	f := newCharacterField("name", 6)
+	f, _ := newCharacterField("name", 6)
 
 	tests := []struct {
 		value   []byte
@@ -278,7 +281,7 @@ func Test_bytesToCharacter(t *testing.T) {
 }
 
 func Test_bytesToLogical(t *testing.T) {
-	f := newLogicalField("name")
+	f, _ := newLogicalField("name")
 
 	tests := []struct {
 		value   []byte
@@ -297,7 +300,7 @@ func Test_bytesToLogical(t *testing.T) {
 }
 
 func Test_bytesToDate(t *testing.T) {
-	f := newDateField("name")
+	f, _ := newDateField("name")
 	d := time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -321,14 +324,17 @@ func Test_bytesToDate(t *testing.T) {
 }
 
 func TestBytesToNumericInt(t *testing.T) {
+	field1, _ := newNumericField("name", 5, 0)
+	field2, _ := newNumericField("name", 8, 2)
+
 	tests := []struct {
 		field   *field
 		value   []byte
 		wantRes interface{}
 		isErr   bool
 	}{
-		{field: newNumericField("name", 5, 0), value: []byte(" -123"), wantRes: int64(-123), isErr: false},
-		{field: newNumericField("name", 8, 2), value: []byte(" -123.45"), wantRes: float64(-123.45), isErr: false},
+		{field: field1, value: []byte(" -123"), wantRes: int64(-123), isErr: false},
+		{field: field2, value: []byte(" -123.45"), wantRes: float64(-123.45), isErr: false},
 	}
 	for _, tc := range tests {
 		gotRes, err := tc.field.bytesToNumeric(tc.value)

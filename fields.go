@@ -11,6 +11,7 @@ import (
 type Fields struct {
 	items   []*field
 	recSize int
+	err     error
 }
 
 // NewFields returns a pointer to a structure Fields.
@@ -25,7 +26,8 @@ func (f *Fields) Count() int {
 
 func (f *Fields) addItem(item *field) {
 	if f.nameExists(item.name()) {
-		panic(fmt.Errorf("duplicate field name %q", item.name()))
+		f.err = fmt.Errorf("duplicate field name %q", item.name())
+		return
 	}
 	item.Offset = uint32(f.recSize)
 	f.recSize += int(item.Len)
@@ -43,22 +45,54 @@ func (f *Fields) nameExists(name string) bool {
 
 // AddLogicalField adds a logical field to the structure.
 func (f *Fields) AddLogicalField(name string) {
-	f.addItem(newLogicalField(name))
+	if f.err != nil {
+		return
+	}
+	item, err := newLogicalField(name)
+	if err != nil {
+		f.err = err
+		return
+	}
+	f.addItem(item)
 }
 
 // AddDateField adds a date field to the structure.
 func (f *Fields) AddDateField(name string) {
-	f.addItem(newDateField(name))
+	if f.err != nil {
+		return
+	}
+	item, err := newDateField(name)
+	if err != nil {
+		f.err = err
+		return
+	}
+	f.addItem(item)
 }
 
 // AddCharacterField adds a character field to the structure.
 func (f *Fields) AddCharacterField(name string, length int) {
-	f.addItem(newCharacterField(name, length))
+	if f.err != nil {
+		return
+	}
+	item, err := newCharacterField(name, length)
+	if err != nil {
+		f.err = err
+		return
+	}
+	f.addItem(item)
 }
 
 // AddNumericField adds a numeric field to the structure.
 func (f *Fields) AddNumericField(name string, length, dec int) {
-	f.addItem(newNumericField(name, length, dec))
+	if f.err != nil {
+		return
+	}
+	item, err := newNumericField(name, length, dec)
+	if err != nil {
+		f.err = err
+		return
+	}
+	f.addItem(item)
 }
 
 // FieldInfo returns field information by index.

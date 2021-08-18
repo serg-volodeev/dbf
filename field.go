@@ -31,52 +31,60 @@ type field struct {
 
 // New field
 
-func newLogicalField(name string) *field {
+func newLogicalField(name string) (*field, error) {
 	f := &field{}
-	f.setName(name)
+	if err := f.setName(name); err != nil {
+		return nil, err
+	}
 	f.Type = 'L'
 	f.Len = 1
-	return f
+	return f, nil
 }
 
-func newDateField(name string) *field {
+func newDateField(name string) (*field, error) {
 	f := &field{}
-	f.setName(name)
+	if err := f.setName(name); err != nil {
+		return nil, err
+	}
 	f.Type = 'D'
 	f.Len = 8
-	return f
+	return f, nil
 }
 
-func newCharacterField(name string, length int) *field {
+func newCharacterField(name string, length int) (*field, error) {
 	if length <= 0 || length > maxCharacterLen {
-		panic(fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxCharacterLen))
+		return nil, fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxCharacterLen)
 	}
 	f := &field{}
-	f.setName(name)
+	if err := f.setName(name); err != nil {
+		return nil, err
+	}
 	f.Type = 'C'
 	f.Len = byte(length)
-	return f
+	return f, nil
 }
 
-func newNumericField(name string, length, dec int) *field {
+func newNumericField(name string, length, dec int) (*field, error) {
 	if length <= 0 || length > maxNumericLen {
-		panic(fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxNumericLen))
+		return nil, fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxNumericLen)
 	}
 	if dec < 0 {
-		panic(fmt.Errorf("invalid field dec: got %d, want dec > 0", dec))
+		return nil, fmt.Errorf("invalid field dec: got %d, want dec > 0", dec)
 	}
 	if length <= 2 && dec > 0 {
-		panic(fmt.Errorf("invalid field dec: got %d, want 0", dec))
+		return nil, fmt.Errorf("invalid field dec: got %d, want 0", dec)
 	}
 	if length > 2 && (dec > length-2) {
-		panic(fmt.Errorf("invalid field dec: got %d, want dec <= %d", dec, length-2))
+		return nil, fmt.Errorf("invalid field dec: got %d, want dec <= %d", dec, length-2)
 	}
 	f := &field{}
-	f.setName(name)
+	if err := f.setName(name); err != nil {
+		return nil, err
+	}
 	f.Type = 'N'
 	f.Len = byte(length)
 	f.Dec = byte(dec)
-	return f
+	return f, nil
 }
 
 // Field name
@@ -86,15 +94,16 @@ func (f *field) name() string {
 	return string(f.Name[:i])
 }
 
-func (f *field) setName(name string) {
+func (f *field) setName(name string) error {
 	name = strings.ToUpper(strings.TrimSpace(name))
 	if len(name) == 0 {
-		panic(fmt.Errorf("empty field name"))
+		return fmt.Errorf("empty field name")
 	}
 	if len(name) > maxNameLen {
-		panic(fmt.Errorf("too long field name: %q, max len %d", name, maxNameLen))
+		return fmt.Errorf("too long field name: %q, max len %d", name, maxNameLen)
 	}
 	copy(f.Name[:], name)
+	return nil
 }
 
 // Read/write

@@ -3,11 +3,19 @@ package dbf
 import (
 	"io"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func Test_Writer_prefix_error(t *testing.T) {
+	_, err := NewWriter(nil, nil, 866)
+	if !strings.HasPrefix(err.Error(), "dbf.NewWriter:") {
+		t.Errorf("NewWriter(): require error prefix")
+	}
+}
 
 func TestWriterWriteRecords(t *testing.T) {
 	f, err := os.Create("./testdata/test.dbf")
