@@ -1,6 +1,5 @@
 # dbf
 Package dbf reads and writes [DBF](http://en.wikipedia.org/wiki/DBase#File_formats) files.
-The API of the __dbf__ package is similar to the __csv__ package from the standard library.
 
 ## Installation
 You can incorporate the library into your local workspace with the following 'go get' command:
