@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"reflect"
 
 	"golang.org/x/text/encoding"
 )
@@ -96,17 +97,25 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 }
 
 // Write writes a single record to w.
-// A record is a slice of interface{} with each value being one field.
+// The record parameter must be struct, *struct or []interface{}.
 // Writes are buffered, so Flush must eventually be called to ensure
 // that the record is written to the underlying io.Writer.
-func (w *Writer) Write(record []interface{}) error {
-	if err := w.writeRecord(record); err != nil {
+func (w *Writer) Write(record interface{}) error {
+	if err := w.write(record); err != nil {
 		return fmt.Errorf("dbf.Write: record %d: %w", w.recCount+1, err)
 	}
 	return nil
 }
 
-func (w *Writer) writeRecord(record []interface{}) error {
+func (w *Writer) write(record interface{}) error {
+	values, ok := record.([]interface{})
+	if ok {
+		return w.writeInterfaceSlice(values)
+	}
+	return w.writeStruct(record)
+}
+
+func (w *Writer) writeInterfaceSlice(record []interface{}) error {
 	if err := w.fields.copyRecordToBuf(w.buf, record, w.encoder); err != nil {
 		return err
 	}
@@ -115,6 +124,26 @@ func (w *Writer) writeRecord(record []interface{}) error {
 	}
 	w.recCount++
 	return nil
+}
+
+func (w *Writer) writeStruct(record interface{}) error {
+	val := reflect.ValueOf(record)
+	typ := val.Type()
+	if typ.Kind() == reflect.Ptr {
+		val = val.Elem()
+		typ = val.Type()
+	}
+	if typ.Kind() != reflect.Struct {
+		return fmt.Errorf("parameter type: want: struct, *struct or []interface{}, got: %v", typ.Kind())
+	}
+	if val.NumField() != w.fields.Count() {
+		return fmt.Errorf("parameter field count: want: %d, got: %d", w.fields.Count(), val.NumField())
+	}
+	values := make([]interface{}, w.fields.Count())
+	for i := 0; i < val.NumField(); i++ {
+		values[i] = val.Field(i).Interface()
+	}
+	return w.writeInterfaceSlice(values)
 }
 
 // Flush writes any buffered data to the underlying io.Writer.
