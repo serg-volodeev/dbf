@@ -86,7 +86,7 @@ func Test_Fields_read(t *testing.T) {
 	}
 }
 
-func Test_Fields_copyRecordToBuf(t *testing.T) {
+func Test_Fields_set_record_buffer(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 6)
 	f.AddLogicalField("flag")
@@ -94,24 +94,19 @@ func Test_Fields_copyRecordToBuf(t *testing.T) {
 
 	buf := []byte(strings.Repeat(" ", f.recSize))
 
-	rec := make([]interface{}, f.Count())
-	rec[0] = "Abc"
-	rec[1] = true
-	rec[2] = 34
+	f.setStringFieldValue(0, buf, "Abc", nil)
+	f.setBoolFieldValue(1, buf, true)
+	f.setIntFieldValue(2, buf, 34)
+
 	want := " Abc   T  34"
 
-	err := f.copyRecordToBuf(buf, rec, nil)
-
-	if err != nil {
-		t.Errorf("Fields.copyRecordToBuf(): %v", err)
-	}
 	if string(buf) != want {
-		t.Errorf("Fields.copyRecordToBuf(): want: %#v, got: %#v", want, string(buf))
+		t.Errorf("Record buffer: want: %#v, got: %#v", want, string(buf))
 	}
 
 }
 
-func Test_Fields_bufToRecord(t *testing.T) {
+func Test_Fields_get_field_values(t *testing.T) {
 	f := NewFields()
 	f.AddCharacterField("name", 6)
 	f.AddLogicalField("flag")
@@ -119,19 +114,18 @@ func Test_Fields_bufToRecord(t *testing.T) {
 
 	buf := []byte(" Abc   T  34")
 
-	rec, err := f.bufToRecord(buf, nil, nil)
+	name, _ := f.stringFieldValue(0, buf, nil)
+	flag, _ := f.boolFieldValue(1, buf)
+	count, _ := f.intFieldValue(2, buf)
 
-	if err != nil {
-		t.Errorf("Fields.bufToRecord(): %v", err)
+	if name != "Abc" {
+		t.Errorf("Field value: want: %#v, got: %#v", "Abc", name)
 	}
-	if rec[0].(string) != "Abc" {
-		t.Errorf("Fields.bufToRecord(): rec[0]: want: %#v, got: %#v", "Abc", rec[0])
+	if flag != true {
+		t.Errorf("Field value: want: %#v, got: %#v", true, flag)
 	}
-	if rec[1].(bool) != true {
-		t.Errorf("Fields.bufToRecord(): rec[1]: want: %#v, got: %#v", true, rec[1])
-	}
-	if rec[2].(int64) != 34 {
-		t.Errorf("Fields.bufToRecord(): rec[2]: want: %#v, got: %#v", 34, rec[2])
+	if count != 34 {
+		t.Errorf("Field value: want: %#v, got: %#v", 34, count)
 	}
 }
 

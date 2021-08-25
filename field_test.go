@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
-	"time"
-
-	"golang.org/x/text/encoding"
 )
 
 // New field
@@ -150,7 +147,7 @@ func Test_field_write(t *testing.T) {
 }
 
 // Value to string
-
+/*
 func Test_field_characterToString(t *testing.T) {
 	f, _ := newCharacterField("name", 6)
 
@@ -253,9 +250,9 @@ func Test_numericToString(t *testing.T) {
 		}
 	}
 }
-
+*/
 // Bytes to value
-
+/*
 func Test_bytesToCharacter(t *testing.T) {
 	f, _ := newCharacterField("name", 6)
 
@@ -348,3 +345,4 @@ func TestBytesToNumericInt(t *testing.T) {
 		}
 	}
 }
+*/

@@ -3,6 +3,7 @@ package dbf
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/text/encoding"
 )
@@ -19,19 +20,27 @@ func NewFields() *Fields {
 	return &Fields{recSize: 1}
 }
 
+// Err returns last error.
+func (f *Fields) Err() error {
+	if f.err != nil {
+		return fmt.Errorf("dbf.Fields: %w", f.err)
+	}
+	return nil
+}
+
 // Count returns the number of fields.
 func (f *Fields) Count() int {
 	return len(f.items)
 }
 
-func (f *Fields) addItem(item *field) {
+func (f *Fields) addItem(item *field) error {
 	if f.nameExists(item.name()) {
-		f.err = fmt.Errorf("duplicate field name %q", item.name())
-		return
+		return fmt.Errorf("duplicate field name %q", item.name())
 	}
 	item.Offset = uint32(f.recSize)
 	f.recSize += int(item.Len)
 	f.items = append(f.items, item)
+	return nil
 }
 
 func (f *Fields) nameExists(name string) bool {
@@ -50,10 +59,13 @@ func (f *Fields) AddLogicalField(name string) {
 	}
 	item, err := newLogicalField(name)
 	if err != nil {
-		f.err = err
+		f.err = fmt.Errorf("AddLogicalField: %w", err)
 		return
 	}
-	f.addItem(item)
+	if err := f.addItem(item); err != nil {
+		f.err = fmt.Errorf("AddLogicalField: %w", err)
+		return
+	}
 }
 
 // AddDateField adds a date field to the structure.
@@ -63,10 +75,13 @@ func (f *Fields) AddDateField(name string) {
 	}
 	item, err := newDateField(name)
 	if err != nil {
-		f.err = err
+		f.err = fmt.Errorf("AddDateField: %w", err)
 		return
 	}
-	f.addItem(item)
+	if err := f.addItem(item); err != nil {
+		f.err = fmt.Errorf("AddDateField: %w", err)
+		return
+	}
 }
 
 // AddCharacterField adds a character field to the structure.
@@ -76,10 +91,13 @@ func (f *Fields) AddCharacterField(name string, length int) {
 	}
 	item, err := newCharacterField(name, length)
 	if err != nil {
-		f.err = err
+		f.err = fmt.Errorf("AddCharacterField: %w", err)
 		return
 	}
-	f.addItem(item)
+	if err := f.addItem(item); err != nil {
+		f.err = fmt.Errorf("AddCharacterField: %w", err)
+		return
+	}
 }
 
 // AddNumericField adds a numeric field to the structure.
@@ -89,15 +107,24 @@ func (f *Fields) AddNumericField(name string, length, dec int) {
 	}
 	item, err := newNumericField(name, length, dec)
 	if err != nil {
-		f.err = err
+		f.err = fmt.Errorf("AddNumericField: %w", err)
 		return
 	}
-	f.addItem(item)
+	if err := f.addItem(item); err != nil {
+		f.err = fmt.Errorf("AddNumericField: %w", err)
+		return
+	}
 }
 
 // FieldInfo returns field information by index.
-func (f *Fields) FieldInfo(i int) (name, typ string, length, dec int) {
-	item := f.items[i]
+func (f *Fields) FieldInfo(index int) (name, typ string, length, dec int) {
+	if f.err != nil {
+		return
+	}
+	if err := f.checkFieldIndex(index); err != nil {
+		f.err = fmt.Errorf("FieldInfo: %w", err)
+	}
+	item := f.items[index]
 	name = item.name()
 	typ = string(item.Type)
 	length = int(item.Len)
@@ -125,62 +152,84 @@ func (f *Fields) read(r io.Reader, count int) error {
 	return nil
 }
 
-func (f *Fields) copyRecordToBuf(buf []byte, record []interface{}, encoder *encoding.Encoder) error {
-	if len(record) != f.Count() {
-		return fmt.Errorf("the record does not match the number of fields")
-	}
-	for i, item := range f.items {
-		var s string
-		var err error
-
-		value := record[i]
-
-		switch item.Type {
-		case 'C':
-			s, err = item.characterToString(value, encoder)
-		case 'L':
-			s, err = item.logicalToString(value)
-		case 'D':
-			s, err = item.dateToString(value)
-		case 'N':
-			s, err = item.numericToString(value)
-		default:
-			err = fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(item.Type))
-		}
-		if err != nil {
-			return fmt.Errorf("field %q: %w", item.name(), err)
-		}
-		item.copyValueToBuf(buf, s)
+func (f *Fields) checkFieldIndex(index int) error {
+	if index < 0 || index >= f.Count() {
+		return fmt.Errorf("field index %d out of range", index)
 	}
 	return nil
 }
 
-func (f *Fields) bufToRecord(buf []byte, dst []interface{}, decoder *encoding.Decoder) ([]interface{}, error) {
-	if len(dst) != f.Count() {
-		dst = make([]interface{}, f.Count())
-	}
-	for i, item := range f.items {
-		var v interface{}
-		var err error
+// Get value
 
-		b := item.bytesFromBuf(buf)
-
-		switch item.Type {
-		case 'C':
-			v, err = item.bytesToCharacter(b, decoder)
-		case 'L':
-			v = item.bytesToLogical(b)
-		case 'D':
-			v, err = item.bytesToDate(b)
-		case 'N':
-			v, err = item.bytesToNumeric(b)
-		default:
-			err = fmt.Errorf("invalid field type: got %s, want C, N, L, D", string(item.Type))
-		}
-		if err != nil {
-			return nil, fmt.Errorf("field %q: %w", item.name(), err)
-		}
-		dst[i] = v
+func (f *Fields) stringFieldValue(index int, recordBuf []byte, decoder *encoding.Decoder) (string, error) {
+	if err := f.checkFieldIndex(index); err != nil {
+		return "", err
 	}
-	return dst, nil
+	return f.items[index].stringFieldValue(recordBuf, decoder)
+}
+
+func (f *Fields) boolFieldValue(index int, recordBuf []byte) (bool, error) {
+	if err := f.checkFieldIndex(index); err != nil {
+		return false, err
+	}
+	return f.items[index].boolFieldValue(recordBuf)
+}
+
+func (f *Fields) dateFieldValue(index int, recordBuf []byte) (time.Time, error) {
+	var d time.Time
+	if err := f.checkFieldIndex(index); err != nil {
+		return d, err
+	}
+	return f.items[index].dateFieldValue(recordBuf)
+}
+
+func (f *Fields) intFieldValue(index int, recordBuf []byte) (int64, error) {
+	if err := f.checkFieldIndex(index); err != nil {
+		return 0, err
+	}
+	return f.items[index].intFieldValue(recordBuf)
+}
+
+func (f *Fields) floatFieldValue(index int, recordBuf []byte) (float64, error) {
+	if err := f.checkFieldIndex(index); err != nil {
+		return 0, err
+	}
+	return f.items[index].floatFieldValue(recordBuf)
+}
+
+// Set value
+
+func (f *Fields) setStringFieldValue(index int, recordBuf []byte, value string, encoder *encoding.Encoder) error {
+	if err := f.checkFieldIndex(index); err != nil {
+		return err
+	}
+	return f.items[index].setStringFieldValue(recordBuf, value, encoder)
+}
+
+func (f *Fields) setBoolFieldValue(index int, recordBuf []byte, value bool) error {
+	if err := f.checkFieldIndex(index); err != nil {
+		return err
+	}
+	return f.items[index].setBoolFieldValue(recordBuf, value)
+}
+
+func (f *Fields) setDateFieldValue(index int, recordBuf []byte, value time.Time) error {
+	if err := f.checkFieldIndex(index); err != nil {
+		return err
+	}
+	return f.items[index].setDateFieldValue(recordBuf, value)
+}
+
+func (f *Fields) setIntFieldValue(index int, recordBuf []byte, value int64) error {
+	if err := f.checkFieldIndex(index); err != nil {
+		return err
+	}
+	return f.items[index].setIntFieldValue(recordBuf, value)
+}
+
+func (f *Fields) setFloatFieldValue(index int, recordBuf []byte, value float64) error {
+	if err := f.checkFieldIndex(index); err != nil {
+		return err
+	}
+	return f.items[index].setFloatFieldValue(recordBuf, value)
 }

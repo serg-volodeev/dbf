@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"reflect"
+	"time"
 
 	"golang.org/x/text/encoding"
 )
@@ -24,6 +24,7 @@ type Writer struct {
 	buf      []byte
 	encoder  *encoding.Encoder
 	recCount uint32
+	err      error
 }
 
 // NewWriter returns a new Writer that writes to w.
@@ -96,10 +97,19 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	return w, nil
 }
 
+// Err returns last error.
+func (w *Writer) Err() error {
+	if w.err != nil {
+		return fmt.Errorf("dbf.Writer: %w", w.err)
+	}
+	return nil
+}
+
 // Write writes a single record to w.
 // The record parameter must be struct, *struct or []interface{}.
 // Writes are buffered, so Flush must eventually be called to ensure
 // that the record is written to the underlying io.Writer.
+/*
 func (w *Writer) Write(record interface{}) error {
 	if err := w.write(record); err != nil {
 		return fmt.Errorf("dbf.Write: record %d: %w", w.recCount+1, err)
@@ -110,12 +120,12 @@ func (w *Writer) Write(record interface{}) error {
 func (w *Writer) write(record interface{}) error {
 	values, ok := record.([]interface{})
 	if ok {
-		return w.writeInterfaceSlice(values)
+		return w.writeSlice(values)
 	}
 	return w.writeStruct(record)
 }
 
-func (w *Writer) writeInterfaceSlice(record []interface{}) error {
+func (w *Writer) writeSlice(record []interface{}) error {
 	if err := w.fields.copyRecordToBuf(w.buf, record, w.encoder); err != nil {
 		return err
 	}
@@ -143,7 +153,7 @@ func (w *Writer) writeStruct(record interface{}) error {
 	for i := 0; i < val.NumField(); i++ {
 		values[i] = val.Field(i).Interface()
 	}
-	return w.writeInterfaceSlice(values)
+	return w.writeSlice(values)
 }
 
 // Flush writes any buffered data to the underlying io.Writer.
@@ -170,4 +180,97 @@ func (w *Writer) flush() error {
 		return err
 	}
 	return nil
+}
+*/
+//----------------------------------
+
+func (w *Writer) Write() {
+	if w.err != nil {
+		return
+	}
+	if _, err := w.writer.Write(w.buf); err != nil {
+		w.err = fmt.Errorf("Write: record %d: %w", w.recCount+1, err)
+		return
+	}
+	w.recCount++
+}
+
+// Flush writes any buffered data to the underlying io.Writer.
+func (w *Writer) Flush() {
+	if w.err != nil {
+		return
+	}
+	if err := w.flush(); err != nil {
+		w.err = fmt.Errorf("Flush: %w", err)
+	}
+}
+
+func (w *Writer) flush() error {
+	if err := w.writer.WriteByte(fileEnd); err != nil {
+		return err
+	}
+	if err := w.writer.Flush(); err != nil {
+		return err
+	}
+	// modify record count in header
+	if _, err := w.ws.Seek(0, 0); err != nil {
+		return err
+	}
+	w.header.RecCount = w.recCount
+	if err := w.header.write(w.ws); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set field value
+
+func (w *Writer) SetStringFieldValue(index int, value string) {
+	if w.err != nil {
+		return
+	}
+	err := w.fields.setStringFieldValue(index, w.buf, value, w.encoder)
+	if err != nil {
+		w.err = fmt.Errorf("SetStringFieldValue: %w", err)
+	}
+}
+
+func (w *Writer) SetBoolFieldValue(index int, value bool) {
+	if w.err != nil {
+		return
+	}
+	err := w.fields.setBoolFieldValue(index, w.buf, value)
+	if err != nil {
+		w.err = fmt.Errorf("SetBoolFieldValue: %w", err)
+	}
+}
+
+func (w *Writer) SetDateFieldValue(index int, value time.Time) {
+	if w.err != nil {
+		return
+	}
+	err := w.fields.setDateFieldValue(index, w.buf, value)
+	if err != nil {
+		w.err = fmt.Errorf("SetDateFieldValue: %w", err)
+	}
+}
+
+func (w *Writer) SetIntFieldValue(index int, value int64) {
+	if w.err != nil {
+		return
+	}
+	err := w.fields.setIntFieldValue(index, w.buf, value)
+	if err != nil {
+		w.err = fmt.Errorf("SetIntFieldValue: %w", err)
+	}
+}
+
+func (w *Writer) SetFloatFieldValue(index int, value float64) {
+	if w.err != nil {
+		return
+	}
+	err := w.fields.setFloatFieldValue(index, w.buf, value)
+	if err != nil {
+		w.err = fmt.Errorf("SetFloatFieldValue: %w", err)
+	}
 }

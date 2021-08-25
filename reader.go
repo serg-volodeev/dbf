@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/text/encoding"
 )
 
-// The Reader reads records from a CSV file.
+// The Reader reads records from a DBF file.
 type Reader struct {
 	header  *header
 	fields  *Fields
@@ -16,14 +17,7 @@ type Reader struct {
 	buf     []byte
 	recNo   uint32
 	decoder *encoding.Decoder
-
-	// ReuseRecord controls whether calls to Read may return a slice sharing
-	// the backing array of the previous call's returned slice for performance.
-	// By default, each call to Read returns newly allocated memory owned by the caller.
-	ReuseRecord bool
-
-	// lastRecord is a record cache and only used when ReuseRecord == true.
-	lastRecord []interface{}
+	err     error
 }
 
 // NewReader returns a new Reader that reads from r.
@@ -64,6 +58,14 @@ func newReader(rd io.Reader) (*Reader, error) {
 	return r, nil
 }
 
+// Err returns last error.
+func (r *Reader) Err() error {
+	if r.err != nil {
+		return fmt.Errorf("dbf.Reader: %w", r.err)
+	}
+	return nil
+}
+
 // SetCodePage sets the code page if no code page is set in the file header.
 //
 // Supported code pages:
@@ -81,63 +83,112 @@ func newReader(rd io.Reader) (*Reader, error) {
 //     1251  - Russian Windows
 //     1254  - Turkish Windows
 //     1253  - Greek Windows
-func (r *Reader) SetCodePage(cp int) error {
+func (r *Reader) SetCodePage(cp int) {
+	if r.err != nil {
+		return
+	}
 	cm := charmapByPage(cp)
 	if cm == nil {
-		return fmt.Errorf("dbf.SetCodePage: unsupported code page %d", cp)
+		r.err = fmt.Errorf("SetCodePage: unsupported code page %d", cp)
+		return
 	}
 	r.decoder = cm.NewDecoder()
 	r.header.setCodePage(cp)
-	return nil
 }
 
 // CodePage returns the code page set in the file header.
 func (r *Reader) CodePage() int {
+	if r.err != nil {
+		return 0
+	}
 	return r.header.codePage()
 }
 
 // RecordCount returns the number of records in the DBF file.
 func (r *Reader) RecordCount() uint32 {
+	if r.err != nil {
+		return 0
+	}
 	return r.header.RecCount
 }
 
 // Fields returns the file structure.
 func (r *Reader) Fields() *Fields {
+	if r.err != nil {
+		return nil
+	}
 	return r.fields
 }
 
-// Read reads one record (a slice of fields) from r.
-// Read always returns either a non-nil record or a non-nil error, but not both.
-// If there is no data left to be read, Read returns nil, io.EOF.
-// If ReuseRecord is true, the returned slice may be shared between multiple calls to Read.
-func (r *Reader) Read() (record []interface{}, err error) {
-	if r.ReuseRecord {
-		record, err = r.readRecord(r.lastRecord)
-		r.lastRecord = record
-	} else {
-		record, err = r.readRecord(nil)
+// Read reads one record from r.
+func (r *Reader) Read() bool {
+	if r.err != nil {
+		return false
 	}
-	if err != nil {
-		if err == io.EOF {
-			return nil, err
-		}
-		return nil, fmt.Errorf("dbf.Read: %w", err)
-	}
-	return record, nil
-}
-
-func (r *Reader) readRecord(dst []interface{}) ([]interface{}, error) {
 	r.recNo++
 	if _, err := io.ReadFull(r.reader, r.buf); err != nil {
-		if err == io.ErrUnexpectedEOF {
-			err = io.EOF
+		if err != io.EOF && err != io.ErrUnexpectedEOF {
+			r.err = fmt.Errorf("Read: record %d: %w", r.recNo, err)
 		}
-		return nil, err
+		return false
 	}
-	var err error
-	dst, err = r.fields.bufToRecord(r.buf, dst, r.decoder)
+	return true
+}
+
+// Get field value
+
+func (r *Reader) StringFieldValue(index int) string {
+	if r.err != nil {
+		return ""
+	}
+	value, err := r.fields.stringFieldValue(index, r.buf, r.decoder)
 	if err != nil {
-		return nil, fmt.Errorf("record %d: %w", r.recNo, err)
+		r.err = fmt.Errorf("StringFieldValue: %w", err)
 	}
-	return dst, nil
+	return value
+}
+
+func (r *Reader) BoolFieldValue(index int) bool {
+	if r.err != nil {
+		return false
+	}
+	value, err := r.fields.boolFieldValue(index, r.buf)
+	if err != nil {
+		r.err = fmt.Errorf("BoolFieldValue: %w", err)
+	}
+	return value
+}
+
+func (r *Reader) DateFieldValue(index int) time.Time {
+	var d time.Time
+	if r.err != nil {
+		return d
+	}
+	value, err := r.fields.dateFieldValue(index, r.buf)
+	if err != nil {
+		r.err = fmt.Errorf("DateFieldValue: %w", err)
+	}
+	return value
+}
+
+func (r *Reader) IntFieldValue(index int) int64 {
+	if r.err != nil {
+		return 0
+	}
+	value, err := r.fields.intFieldValue(index, r.buf)
+	if err != nil {
+		r.err = fmt.Errorf("IntFieldValue: %w", err)
+	}
+	return value
+}
+
+func (r *Reader) FloatFieldValue(index int) float64 {
+	if r.err != nil {
+		return 0
+	}
+	value, err := r.fields.floatFieldValue(index, r.buf)
+	if err != nil {
+		r.err = fmt.Errorf("FloatFieldValue: %w", err)
+	}
+	return value
 }

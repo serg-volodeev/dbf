@@ -119,6 +119,8 @@ func (f *field) write(writer io.Writer) error {
 	return binary.Write(writer, binary.LittleEndian, f)
 }
 
+// Check value
+
 func (f *field) checkLen(value string) error {
 	if len(value) > int(f.Len) {
 		return fmt.Errorf("field value %q overflow: value len %d, field len %d", value, len(value), int(f.Len))
@@ -126,161 +128,121 @@ func (f *field) checkLen(value string) error {
 	return nil
 }
 
-// Value to string
+// Get field value
 
-func (f *field) characterToString(value interface{}, encoder *encoding.Encoder) (string, error) {
+func (f *field) fieldBuf(recordBuf []byte) []byte {
+	return recordBuf[int(f.Offset) : int(f.Offset)+int(f.Len)]
+}
+
+func (f *field) stringFieldValue(recordBuf []byte, decoder *encoding.Decoder) (string, error) {
 	var err error
-	v, ok := value.(string)
-	if !ok {
-		return "", fmt.Errorf("error convert %v to string", value)
-	}
-	if encoder != nil && !isASCII(v) {
-		v, err = encoder.String(v)
-		if err != nil {
-			return "", err
-		}
-	}
-	if err := f.checkLen(v); err != nil {
-		return "", err
-	}
-	v = padRight(v, int(f.Len))
-	return v, nil
-}
-
-func (f *field) logicalToString(value interface{}) (string, error) {
-	v, ok := value.(bool)
-	if !ok {
-		return "", fmt.Errorf("error convert %v to bool", value)
-	}
-	if v {
-		return "T", nil
-	}
-	return "F", nil
-}
-
-func (f *field) dateToString(value interface{}) (string, error) {
-	v, ok := value.(time.Time)
-	if !ok {
-		return "", fmt.Errorf("error convert %v to date", value)
-	}
-	return v.Format("20060102"), nil
-}
-
-func (f *field) numericToString(value interface{}) (string, error) {
-	var s string
-
-	switch v := value.(type) {
-	case int:
-		s = f.formatInt(int64(v))
-	case int8:
-		s = f.formatInt(int64(v))
-	case int16:
-		s = f.formatInt(int64(v))
-	case int32:
-		s = f.formatInt(int64(v))
-	case int64:
-		s = f.formatInt(int64(v))
-	case uint:
-		s = f.formatInt(int64(v))
-	case uint8:
-		s = f.formatInt(int64(v))
-	case uint16:
-		s = f.formatInt(int64(v))
-	case uint32:
-		s = f.formatInt(int64(v))
-	case uint64:
-		s = f.formatInt(int64(v))
-	case float32:
-		s = f.formatFloat(float64(v))
-	case float64:
-		s = f.formatFloat(float64(v))
-	default:
-		return "", fmt.Errorf("error convert %v to numeric", value)
-	}
-	if err := f.checkLen(s); err != nil {
-		return "", err
-	}
-	s = padLeft(s, int(f.Len))
-	return s, nil
-}
-
-func (f *field) formatInt(i int64) string {
-	s := strconv.FormatInt(i, 10)
-	if f.Dec > 0 {
-		s += "." + strings.Repeat("0", int(f.Dec))
-	}
-	return s
-}
-
-func (f *field) formatFloat(n float64) string {
-	return strconv.FormatFloat(n, 'f', int(f.Dec), 64)
-}
-
-// Bytes to value
-
-func (f *field) bytesToCharacter(buf []byte, decoder *encoding.Decoder) (interface{}, error) {
-	var result interface{}
-	var err error
+	buf := f.fieldBuf(recordBuf)
 	s := trimRight(buf)
 	if decoder != nil && !isASCII(s) {
 		s, err = decoder.String(s)
 		if err != nil {
-			return result, err
+			return "", err
 		}
 	}
-	result = s
+	return s, nil
+}
+
+func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
+	buf := f.fieldBuf(recordBuf)
+	b := buf[0]
+	result := (b == 'T' || b == 't' || b == 'Y' || b == 'y')
 	return result, nil
 }
 
-func (f *field) bytesToLogical(buf []byte) interface{} {
-	var result interface{}
-	b := buf[0]
-	result = (b == 'T' || b == 't' || b == 'Y' || b == 'y')
-	return result
-}
-
-func (f *field) bytesToDate(buf []byte) (interface{}, error) {
-	var result interface{}
+func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
 	var d time.Time
 	var err error
+	buf := f.fieldBuf(recordBuf)
 
-	if !isEmpty(buf) {
-		d, err = time.Parse("20060102", string(buf))
-		if err != nil {
-			return result, err
-		}
+	if isEmpty(buf) {
+		return d, err
 	}
-	result = d
-	return result, err
+	return time.Parse("20060102", string(buf))
 }
 
-func (f *field) bytesToNumeric(buf []byte) (interface{}, error) {
-	var result interface{}
-
+func (f *field) intFieldValue(recordBuf []byte) (int64, error) {
+	if f.Dec != 0 {
+		return 0, fmt.Errorf("field dec exists")
+	}
+	buf := f.fieldBuf(recordBuf)
 	s := trimLeft(buf)
 	if s == "" {
 		s = "0"
 	}
-	if f.Dec == 0 {
-		n, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return result, err
-		}
-		result = n
-	} else {
-		n, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return result, err
-		}
-		result = n
+	return strconv.ParseInt(s, 10, 64)
+}
+
+func (f *field) floatFieldValue(recordBuf []byte) (float64, error) {
+	buf := f.fieldBuf(recordBuf)
+	s := trimLeft(buf)
+	if s == "" {
+		s = "0"
 	}
-	return result, nil
+	return strconv.ParseFloat(s, 64)
 }
 
-func (f *field) copyValueToBuf(buf []byte, value string) {
-	copy(buf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
+// Set field value
+
+func (f *field) setFieldBuf(recordBuf []byte, value string) {
+	copy(recordBuf[int(f.Offset):int(f.Offset)+int(f.Len)], value)
 }
 
-func (f *field) bytesFromBuf(buf []byte) []byte {
-	return buf[int(f.Offset) : int(f.Offset)+int(f.Len)]
+func (f *field) setStringFieldValue(recordBuf []byte, value string, encoder *encoding.Encoder) error {
+	var err error
+	s := value
+	if encoder != nil && !isASCII(s) {
+		s, err = encoder.String(s)
+		if err != nil {
+			return err
+		}
+	}
+	if err := f.checkLen(s); err != nil {
+		return err
+	}
+	s = padRight(s, int(f.Len))
+	f.setFieldBuf(recordBuf, s)
+	return nil
+}
+
+func (f *field) setBoolFieldValue(recordBuf []byte, value bool) error {
+	s := "F"
+	if value {
+		s = "T"
+	}
+	f.setFieldBuf(recordBuf, s)
+	return nil
+}
+
+func (f *field) setDateFieldValue(recordBuf []byte, value time.Time) error {
+	s := value.Format("20060102")
+	f.setFieldBuf(recordBuf, s)
+	return nil
+}
+
+func (f *field) setIntFieldValue(recordBuf []byte, value int64) error {
+	s := strconv.FormatInt(value, 10)
+	if f.Dec > 0 {
+		s += "." + strings.Repeat("0", int(f.Dec))
+	}
+	if err := f.checkLen(s); err != nil {
+		return err
+	}
+	s = padLeft(s, int(f.Len))
+	f.setFieldBuf(recordBuf, s)
+	return nil
+}
+
+func (f *field) setFloatFieldValue(recordBuf []byte, value float64) error {
+	s := strconv.FormatFloat(value, 'f', int(f.Dec), 64)
+	if err := f.checkLen(s); err != nil {
+		return err
+	}
+	s = padLeft(s, int(f.Len))
+	f.setFieldBuf(recordBuf, s)
+	return nil
 }

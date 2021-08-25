@@ -1,9 +1,7 @@
 package dbf
 
 import (
-	"io"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -88,13 +86,13 @@ func Test_Reader_Read_file_empty(t *testing.T) {
 		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 0, r.RecordCount())
 	}
 
-	rec, err := r.Read()
+	ok := r.Read()
 
-	if err != io.EOF {
-		t.Errorf("Read(): err: want: %v, got: %v", io.EOF, err)
+	if ok {
+		t.Errorf("Read(): want: %v, got: %v", false, ok)
 	}
-	if len(rec) != 0 {
-		t.Errorf("Read(): len(rec): want: %v, got: %v", 0, len(rec))
+	if r.Err() != nil {
+		t.Errorf("Read(): Err(): want: %v, got: %v", nil, r.Err())
 	}
 }
 
@@ -114,29 +112,26 @@ func Test_Reader_Read_record_blank(t *testing.T) {
 		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 1, r.RecordCount())
 	}
 
-	rec, err := r.Read()
+	ok := r.Read()
 
-	if err != nil {
-		t.Errorf("Read(): %v", err)
+	if !ok {
+		t.Errorf("Read(): want: %v, got: %v", true, ok)
 	}
-	if len(rec) != 5 {
-		t.Errorf("Read(): len(rec): want: %v, got: %v", 0, len(rec))
+	if r.StringFieldValue(0) != "" {
+		t.Errorf("Read(): r.StringFieldValue(0): want: %#v, got: %#v", "", r.StringFieldValue(0))
 	}
-	if rec[0].(string) != "" {
-		t.Errorf("Read(): rec[0]: want: %#v, got: %#v", "", rec[0])
+	if r.BoolFieldValue(1) != false {
+		t.Errorf("Read(): r.BoolFieldValue(1): want: %#v, got: %#v", false, r.BoolFieldValue(1))
 	}
-	if rec[1].(bool) != false {
-		t.Errorf("Read(): rec[1]: want: %#v, got: %#v", false, rec[1])
+	if r.IntFieldValue(2) != 0 {
+		t.Errorf("Read(): r.IntFieldValue(2): want: %#v, got: %#v", 0, r.IntFieldValue(2))
 	}
-	if rec[2].(int64) != 0 {
-		t.Errorf("Read(): rec[2]: want: %#v, got: %#v", 0, rec[2])
-	}
-	if rec[3].(float64) != 0 {
-		t.Errorf("Read(): rec[3]: want: %#v, got: %#v", 0, rec[3])
+	if r.FloatFieldValue(3) != 0 {
+		t.Errorf("Read(): r.FloatFieldValue(3): want: %#v, got: %#v", 0, r.FloatFieldValue(3))
 	}
 	var d time.Time
-	if rec[4].(time.Time) != d {
-		t.Errorf("Read(): rec[4]: want: %v, got: %v", d, rec[4])
+	if r.DateFieldValue(4) != d {
+		t.Errorf("Read(): r.DateFieldValue(4): want: %#v, got: %#v", d, r.DateFieldValue(4))
 	}
 }
 
@@ -159,21 +154,37 @@ func Test_Reader_Read_records(t *testing.T) {
 	var d time.Time
 	d1 := time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
 
-	testRecords := [][]interface{}{
-		{"Abc", true, int64(123), float64(123.45), d1},
-		{"", false, int64(0), float64(0), d},
-		{"Мышь", false, int64(-321), float64(-54.32), d1},
+	testRecords := []struct {
+		name  string
+		flag  bool
+		count int64
+		price float64
+		date  time.Time
+	}{
+		{"Abc", true, 123, 123.45, d1},
+		{"", false, 0, 0, d},
+		{"Мышь", false, -321, -54.32, d1},
 	}
 
-	for i := uint32(0); i < r.RecordCount(); i++ {
-		want := testRecords[int(i)]
-		got, err := r.Read()
+	i := 0
+	for r.Read() {
+		want := testRecords[i]
+		i++
 
-		if err != nil {
-			t.Errorf("Read(): %v", err)
+		if r.StringFieldValue(0) != want.name {
+			t.Errorf("r.StringFieldValue(0): want: %#v, got: %#v", want.name, r.StringFieldValue(0))
 		}
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("Read():\nwant: %v\ngot : %v", want, got)
+		if r.BoolFieldValue(1) != want.flag {
+			t.Errorf("r.BoolFieldValue(1): want: %#v, got: %#v", want.flag, r.BoolFieldValue(1))
+		}
+		if r.IntFieldValue(2) != want.count {
+			t.Errorf("r.IntFieldValue(2): want: %#v, got: %#v", want.count, r.IntFieldValue(2))
+		}
+		if r.FloatFieldValue(3) != want.price {
+			t.Errorf("r.FloatFieldValue(3): want: %#v, got: %#v", want.price, r.FloatFieldValue(3))
+		}
+		if r.DateFieldValue(4) != want.date {
+			t.Errorf("r.DateFieldValue(4): want: %#v, got: %#v", want.date, r.DateFieldValue(4))
 		}
 	}
 }
