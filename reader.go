@@ -58,7 +58,7 @@ func newReader(rd io.Reader) (*Reader, error) {
 	return r, nil
 }
 
-// Err returns last error.
+// Err returns the first error that was encountered by the Reader.
 func (r *Reader) Err() error {
 	if r.err != nil {
 		return fmt.Errorf("dbf.Reader: %w", r.err)
@@ -121,6 +121,7 @@ func (r *Reader) Fields() *Fields {
 }
 
 // Read reads one record from r.
+// Returns false if end of file is reached or an error occurs.
 func (r *Reader) Read() bool {
 	if r.err != nil {
 		return false
@@ -135,8 +136,8 @@ func (r *Reader) Read() bool {
 	return true
 }
 
-// Get field value
-
+// StringFieldValue returns the value of the field by index.
+// Field type must be Character.
 func (r *Reader) StringFieldValue(index int) string {
 	if r.err != nil {
 		return ""
@@ -148,6 +149,8 @@ func (r *Reader) StringFieldValue(index int) string {
 	return value
 }
 
+// BoolFieldValue returns the value of the field by index.
+// Field type must be Logical.
 func (r *Reader) BoolFieldValue(index int) bool {
 	if r.err != nil {
 		return false
@@ -159,6 +162,8 @@ func (r *Reader) BoolFieldValue(index int) bool {
 	return value
 }
 
+// DateFieldValue returns the value of the field by index.
+// Field type must be Date.
 func (r *Reader) DateFieldValue(index int) time.Time {
 	var d time.Time
 	if r.err != nil {
@@ -171,6 +176,10 @@ func (r *Reader) DateFieldValue(index int) time.Time {
 	return value
 }
 
+// IntFieldValue returns the value of the field by index.
+// Field type must be Numeric.
+// If field decimal places is not zero,
+// then it returns the integer part of the number.
 func (r *Reader) IntFieldValue(index int) int64 {
 	if r.err != nil {
 		return 0
@@ -182,6 +191,8 @@ func (r *Reader) IntFieldValue(index int) int64 {
 	return value
 }
 
+// FloatFieldValue returns the value of the field by index.
+// Field type must be Numeric.
 func (r *Reader) FloatFieldValue(index int) float64 {
 	if r.err != nil {
 		return 0

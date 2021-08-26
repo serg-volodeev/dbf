@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
+
+	"golang.org/x/text/encoding"
 )
 
 // New field
@@ -146,203 +149,292 @@ func Test_field_write(t *testing.T) {
 	}
 }
 
-// Value to string
-/*
-func Test_field_characterToString(t *testing.T) {
+// Set field value
+
+func Test_field_setStringFieldValue(t *testing.T) {
 	f, _ := newCharacterField("name", 6)
 
 	tests := []struct {
-		value   interface{}
+		value   string
 		encoder *encoding.Encoder
-		wantRes string
+		want    string
 		isErr   bool
 	}{
-		{value: "Abc", encoder: nil, wantRes: "Abc   ", isErr: false},
-		{value: true, encoder: nil, wantRes: "", isErr: true},
+		{value: "Abc", encoder: nil, want: "Abc   ", isErr: false},
+		{value: "", encoder: nil, want: "      ", isErr: false},
+		{value: "1234567", encoder: nil, want: "      ", isErr: true},
 	}
 	for _, tc := range tests {
-		gotRes, err := f.characterToString(tc.value, tc.encoder)
+		buf := []byte("      ")
+		err := f.setStringFieldValue(buf, tc.value, tc.encoder)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.characterToString(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
+			t.Errorf("field.setStringFieldValue(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.characterToString(%#v): want: %#v, got: %#v", tc.value, tc.wantRes, gotRes)
+		if tc.want != string(buf) {
+			t.Errorf("field.setStringFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
 		}
 	}
 }
 
-func Test_logicalToString(t *testing.T) {
+func Test_field_setBoolFieldValue(t *testing.T) {
 	f, _ := newLogicalField("name")
 
 	tests := []struct {
-		value   interface{}
-		wantRes string
-		isErr   bool
+		value bool
+		want  string
+		isErr bool
 	}{
-		{value: false, wantRes: "F", isErr: false},
-		{value: true, wantRes: "T", isErr: false},
-		{value: "abc", wantRes: "", isErr: true},
+		{value: false, want: "F", isErr: false},
+		{value: true, want: "T", isErr: false},
 	}
 	for _, tc := range tests {
-		gotRes, err := f.logicalToString(tc.value)
+		buf := []byte(" ")
+		err := f.setBoolFieldValue(buf, tc.value)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.logicalToString(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
+			t.Errorf("field.setBoolFieldValue(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.logicalToString(%#v): want: %#v, got: %#v", tc.value, tc.wantRes, gotRes)
+		if tc.want != string(buf) {
+			t.Errorf("field.setBoolFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
 		}
 	}
 }
 
-func Test_dateToString(t *testing.T) {
+func Test_field_setDateFieldValue(t *testing.T) {
 	f, _ := newDateField("name")
 	d := time.Date(2021, 7, 26, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		value   interface{}
-		wantRes string
-		isErr   bool
+		value time.Time
+		want  string
+		isErr bool
 	}{
-		{value: d, wantRes: "20210726", isErr: false},
-		{value: "abc", wantRes: "", isErr: true},
+		{value: d, want: "20210726", isErr: false},
 	}
 	for _, tc := range tests {
-		gotRes, err := f.dateToString(tc.value)
+		buf := []byte("        ")
+		err := f.setDateFieldValue(buf, tc.value)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.dateToString(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
+			t.Errorf("field.setDateFieldValue(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.dateToString(%#v): want: %#v, got: %#v", tc.value, tc.wantRes, gotRes)
+		if tc.want != string(buf) {
+			t.Errorf("field.setDateFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
 		}
 	}
 }
 
-func Test_numericToString(t *testing.T) {
-	field1, _ := newNumericField("name", 6, 0)
-	field2, _ := newNumericField("name", 9, 2)
+func Test_field_setIntFieldValue(t *testing.T) {
+	f, _ := newNumericField("name", 6, 0)
 
 	tests := []struct {
-		field   *field
-		value   interface{}
-		wantRes string
-		isErr   bool
+		value int64
+		want  string
+		isErr bool
 	}{
-		{field: field1, value: -123, wantRes: "  -123", isErr: false},
-		{field: field1, value: "abc", wantRes: "", isErr: true},
-		{field: field2, value: -123.4, wantRes: "  -123.40", isErr: false},
-		{field: field2, value: 0, wantRes: "     0.00", isErr: false},
+		{value: -123, want: "  -123", isErr: false},
+		{value: 123, want: "   123", isErr: false},
+		{value: 0, want: "     0", isErr: false},
+		{value: 1234567, want: "      ", isErr: true},
 	}
 	for _, tc := range tests {
-		gotRes, err := tc.field.numericToString(tc.value)
+		buf := []byte("      ")
+		err := f.setIntFieldValue(buf, tc.value)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.numericToString(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
+			t.Errorf("field.setIntFieldValue(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.numericToString(%#v): want: %#v, got: %#v", tc.value, tc.wantRes, gotRes)
+		if tc.want != string(buf) {
+			t.Errorf("field.setIntFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
 		}
 	}
 }
-*/
-// Bytes to value
-/*
-func Test_bytesToCharacter(t *testing.T) {
+
+func Test_field_setFloatFieldValue(t *testing.T) {
+	f, _ := newNumericField("name", 9, 2)
+
+	tests := []struct {
+		value float64
+		want  string
+		isErr bool
+	}{
+		{value: -123.45, want: "  -123.45", isErr: false},
+		{value: 123, want: "   123.00", isErr: false},
+		{value: 0, want: "     0.00", isErr: false},
+		{value: 1234567, want: "         ", isErr: true},
+	}
+	for _, tc := range tests {
+		buf := []byte("         ")
+		err := f.setFloatFieldValue(buf, tc.value)
+		gotErr := (err != nil)
+
+		if tc.isErr != gotErr {
+			t.Errorf("field.setFloatFieldValue(%#v): want error: %v, got error: %v", tc.value, tc.isErr, gotErr)
+		}
+		if tc.want != string(buf) {
+			t.Errorf("field.setFloatFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
+		}
+	}
+}
+
+// Get field value
+
+func Test_field_stringFieldValue(t *testing.T) {
 	f, _ := newCharacterField("name", 6)
 
 	tests := []struct {
-		value   []byte
+		buf     []byte
 		decoder *encoding.Decoder
-		wantRes interface{}
+		want    string
 		isErr   bool
 	}{
-		{value: []byte("Abc"), decoder: nil, wantRes: "Abc", isErr: false},
+		{buf: []byte("Abc   "), decoder: nil, want: "Abc", isErr: false},
+		{buf: []byte(" Abc  "), decoder: nil, want: " Abc", isErr: false},
+		{buf: []byte("      "), decoder: nil, want: "", isErr: false},
 	}
 	for _, tc := range tests {
-		gotRes, err := f.bytesToCharacter(tc.value, tc.decoder)
+		got, err := f.stringFieldValue(tc.buf, tc.decoder)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.bytesToCharacter(%#v): want error: %v, got error: %v", string(tc.value), tc.isErr, gotErr)
+			t.Errorf("field.stringFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.bytesToCharacter(%#v): want: %#v, got: %#v", string(tc.value), tc.wantRes, gotRes)
+		if tc.want != got {
+			t.Errorf("field.stringFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
 		}
 	}
 }
 
-func Test_bytesToLogical(t *testing.T) {
+func Test_field_boolFieldValue(t *testing.T) {
 	f, _ := newLogicalField("name")
 
 	tests := []struct {
-		value   []byte
-		wantRes interface{}
+		buf   []byte
+		want  bool
+		isErr bool
 	}{
-		{value: []byte("T"), wantRes: true},
-		{value: []byte("F"), wantRes: false},
+		{buf: []byte("T"), want: true, isErr: false},
+		{buf: []byte("F"), want: false, isErr: false},
+		{buf: []byte(" "), want: false, isErr: false},
 	}
 	for _, tc := range tests {
-		gotRes := f.bytesToLogical(tc.value)
+		got, err := f.boolFieldValue(tc.buf)
+		gotErr := (err != nil)
 
-		if tc.wantRes != gotRes {
-			t.Errorf("field.bytesToLogical(%#v): want: %#v, got: %#v", string(tc.value), tc.wantRes, gotRes)
+		if tc.isErr != gotErr {
+			t.Errorf("field.boolFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
+		}
+		if tc.want != got {
+			t.Errorf("field.boolFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
 		}
 	}
 }
 
-func Test_bytesToDate(t *testing.T) {
+func Test_field_dateFieldValue(t *testing.T) {
 	f, _ := newDateField("name")
-	d := time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC)
+
+	d1 := time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC)
+	var d2 time.Time
 
 	tests := []struct {
-		value   []byte
-		wantRes interface{}
-		isErr   bool
+		buf   []byte
+		want  time.Time
+		isErr bool
 	}{
-		{value: []byte("20210727"), wantRes: d, isErr: false},
+		{buf: []byte("20210727"), want: d1, isErr: false},
+		{buf: []byte("        "), want: d2, isErr: false},
 	}
 	for _, tc := range tests {
-		gotRes, err := f.bytesToDate(tc.value)
+		got, err := f.dateFieldValue(tc.buf)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.bytesToDate(%#v): want error: %v, got error: %v", string(tc.value), tc.isErr, gotErr)
+			t.Errorf("field.dateFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.bytesToDate(%#v): want: %v, got: %v", string(tc.value), tc.wantRes, gotRes)
+		if tc.want != got {
+			t.Errorf("field.dateFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
 		}
 	}
 }
 
-func TestBytesToNumericInt(t *testing.T) {
-	field1, _ := newNumericField("name", 5, 0)
-	field2, _ := newNumericField("name", 8, 2)
+func Test_field_intFieldValue(t *testing.T) {
+	f, _ := newNumericField("name", 5, 0)
 
 	tests := []struct {
-		field   *field
-		value   []byte
-		wantRes interface{}
-		isErr   bool
+		buf   []byte
+		want  int64
+		isErr bool
 	}{
-		{field: field1, value: []byte(" -123"), wantRes: int64(-123), isErr: false},
-		{field: field2, value: []byte(" -123.45"), wantRes: float64(-123.45), isErr: false},
+		{buf: []byte(" -123"), want: -123, isErr: false},
+		{buf: []byte("  123"), want: 123, isErr: false},
+		{buf: []byte("     "), want: 0, isErr: false},
+		{buf: []byte("abc  "), want: 0, isErr: true},
 	}
 	for _, tc := range tests {
-		gotRes, err := tc.field.bytesToNumeric(tc.value)
+		got, err := f.intFieldValue(tc.buf)
 		gotErr := (err != nil)
 
 		if tc.isErr != gotErr {
-			t.Errorf("field.bytesToNumeric(%#v): want error: %v, got error: %v", string(tc.value), tc.isErr, gotErr)
+			t.Errorf("field.intFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
 		}
-		if tc.wantRes != gotRes {
-			t.Errorf("field.bytesToNumeric(%#v): want: %v, got: %v", string(tc.value), tc.wantRes, gotRes)
+		if tc.want != got {
+			t.Errorf("field.intFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
 		}
 	}
 }
-*/
+
+func Test_field_intFieldValue_dec_not_zero(t *testing.T) {
+	f, _ := newNumericField("name", 8, 2)
+
+	tests := []struct {
+		buf   []byte
+		want  int64
+		isErr bool
+	}{
+		{buf: []byte(" -123.45"), want: -123, isErr: false},
+		{buf: []byte("  123.67"), want: 123, isErr: false},
+		{buf: []byte("        "), want: 0, isErr: false},
+	}
+	for _, tc := range tests {
+		got, err := f.intFieldValue(tc.buf)
+		gotErr := (err != nil)
+
+		if tc.isErr != gotErr {
+			t.Errorf("field.intFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
+		}
+		if tc.want != got {
+			t.Errorf("field.intFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
+		}
+	}
+}
+
+func Test_field_floatFieldValue(t *testing.T) {
+	f, _ := newNumericField("name", 8, 2)
+
+	tests := []struct {
+		buf   []byte
+		want  float64
+		isErr bool
+	}{
+		{buf: []byte(" -123.45"), want: -123.45, isErr: false},
+		{buf: []byte("  123.00"), want: 123, isErr: false},
+		{buf: []byte("        "), want: 0, isErr: false},
+		{buf: []byte("abc     "), want: 0, isErr: true},
+	}
+	for _, tc := range tests {
+		got, err := f.floatFieldValue(tc.buf)
+		gotErr := (err != nil)
+
+		if tc.isErr != gotErr {
+			t.Errorf("field.floatFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
+		}
+		if tc.want != got {
+			t.Errorf("field.floatFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
+		}
+	}
+}

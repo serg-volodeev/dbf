@@ -20,7 +20,7 @@ func NewFields() *Fields {
 	return &Fields{recSize: 1}
 }
 
-// Err returns last error.
+// Err returns the first error that was encountered by the Fields.
 func (f *Fields) Err() error {
 	if f.err != nil {
 		return fmt.Errorf("dbf.Fields: %w", f.err)

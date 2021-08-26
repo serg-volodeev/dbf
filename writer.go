@@ -97,7 +97,7 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	return w, nil
 }
 
-// Err returns last error.
+// Err returns the first error that was encountered by the Writer.
 func (w *Writer) Err() error {
 	if w.err != nil {
 		return fmt.Errorf("dbf.Writer: %w", w.err)
@@ -106,84 +106,6 @@ func (w *Writer) Err() error {
 }
 
 // Write writes a single record to w.
-// The record parameter must be struct, *struct or []interface{}.
-// Writes are buffered, so Flush must eventually be called to ensure
-// that the record is written to the underlying io.Writer.
-/*
-func (w *Writer) Write(record interface{}) error {
-	if err := w.write(record); err != nil {
-		return fmt.Errorf("dbf.Write: record %d: %w", w.recCount+1, err)
-	}
-	return nil
-}
-
-func (w *Writer) write(record interface{}) error {
-	values, ok := record.([]interface{})
-	if ok {
-		return w.writeSlice(values)
-	}
-	return w.writeStruct(record)
-}
-
-func (w *Writer) writeSlice(record []interface{}) error {
-	if err := w.fields.copyRecordToBuf(w.buf, record, w.encoder); err != nil {
-		return err
-	}
-	if _, err := w.writer.Write(w.buf); err != nil {
-		return err
-	}
-	w.recCount++
-	return nil
-}
-
-func (w *Writer) writeStruct(record interface{}) error {
-	val := reflect.ValueOf(record)
-	typ := val.Type()
-	if typ.Kind() == reflect.Ptr {
-		val = val.Elem()
-		typ = val.Type()
-	}
-	if typ.Kind() != reflect.Struct {
-		return fmt.Errorf("parameter type: want: struct, *struct or []interface{}, got: %v", typ.Kind())
-	}
-	if val.NumField() != w.fields.Count() {
-		return fmt.Errorf("parameter field count: want: %d, got: %d", w.fields.Count(), val.NumField())
-	}
-	values := make([]interface{}, w.fields.Count())
-	for i := 0; i < val.NumField(); i++ {
-		values[i] = val.Field(i).Interface()
-	}
-	return w.writeSlice(values)
-}
-
-// Flush writes any buffered data to the underlying io.Writer.
-func (w *Writer) Flush() error {
-	if err := w.flush(); err != nil {
-		return fmt.Errorf("dbf.Flush: %w", err)
-	}
-	return nil
-}
-
-func (w *Writer) flush() error {
-	if err := w.writer.WriteByte(fileEnd); err != nil {
-		return err
-	}
-	if err := w.writer.Flush(); err != nil {
-		return err
-	}
-	// modify record count in header
-	if _, err := w.ws.Seek(0, 0); err != nil {
-		return err
-	}
-	w.header.RecCount = w.recCount
-	if err := w.header.write(w.ws); err != nil {
-		return err
-	}
-	return nil
-}
-*/
-//----------------------------------
-
 func (w *Writer) Write() {
 	if w.err != nil {
 		return
@@ -223,8 +145,8 @@ func (w *Writer) flush() error {
 	return nil
 }
 
-// Set field value
-
+// SetStringFieldValue assigns a value to a field by index.
+// Field type must be Character.
 func (w *Writer) SetStringFieldValue(index int, value string) {
 	if w.err != nil {
 		return
@@ -235,6 +157,8 @@ func (w *Writer) SetStringFieldValue(index int, value string) {
 	}
 }
 
+// SetBoolFieldValue assigns a value to a field by index.
+// Field type must be Logical.
 func (w *Writer) SetBoolFieldValue(index int, value bool) {
 	if w.err != nil {
 		return
@@ -245,6 +169,8 @@ func (w *Writer) SetBoolFieldValue(index int, value bool) {
 	}
 }
 
+// SetDateFieldValue assigns a value to a field by index.
+// Field type must be Date.
 func (w *Writer) SetDateFieldValue(index int, value time.Time) {
 	if w.err != nil {
 		return
@@ -255,6 +181,8 @@ func (w *Writer) SetDateFieldValue(index int, value time.Time) {
 	}
 }
 
+// SetIntFieldValue assigns a value to a field by index.
+// Field type must be Numeric.
 func (w *Writer) SetIntFieldValue(index int, value int64) {
 	if w.err != nil {
 		return
@@ -265,6 +193,8 @@ func (w *Writer) SetIntFieldValue(index int, value int64) {
 	}
 }
 
+// SetFloatFieldValue assigns a value to a field by index.
+// Field type must be Numeric.
 func (w *Writer) SetFloatFieldValue(index int, value float64) {
 	if w.err != nil {
 		return

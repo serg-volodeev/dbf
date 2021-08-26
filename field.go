@@ -166,10 +166,10 @@ func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
 }
 
 func (f *field) intFieldValue(recordBuf []byte) (int64, error) {
-	if f.Dec != 0 {
-		return 0, fmt.Errorf("field dec exists")
-	}
 	buf := f.fieldBuf(recordBuf)
+	if f.Dec != 0 {
+		buf = buf[:len(buf)-int(f.Dec)-1]
+	}
 	s := trimLeft(buf)
 	if s == "" {
 		s = "0"
