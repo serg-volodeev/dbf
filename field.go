@@ -119,11 +119,18 @@ func (f *field) write(writer io.Writer) error {
 	return binary.Write(writer, binary.LittleEndian, f)
 }
 
-// Check value
+// Check field
 
 func (f *field) checkLen(value string) error {
 	if len(value) > int(f.Len) {
 		return fmt.Errorf("field value %q overflow: value len %d, field len %d", value, len(value), int(f.Len))
+	}
+	return nil
+}
+
+func (f *field) checkType(t byte) error {
+	if t != f.Type {
+		return fmt.Errorf("field type: want: %q, got %q", t, f.Type)
 	}
 	return nil
 }
@@ -135,6 +142,9 @@ func (f *field) fieldBuf(recordBuf []byte) []byte {
 }
 
 func (f *field) stringFieldValue(recordBuf []byte, decoder *encoding.Decoder) (string, error) {
+	if err := f.checkType('C'); err != nil {
+		return "", err
+	}
 	var err error
 	buf := f.fieldBuf(recordBuf)
 	s := trimRight(buf)
@@ -148,6 +158,9 @@ func (f *field) stringFieldValue(recordBuf []byte, decoder *encoding.Decoder) (s
 }
 
 func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
+	if err := f.checkType('L'); err != nil {
+		return false, err
+	}
 	buf := f.fieldBuf(recordBuf)
 	b := buf[0]
 	result := (b == 'T' || b == 't' || b == 'Y' || b == 'y')
@@ -156,6 +169,9 @@ func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
 
 func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
 	var d time.Time
+	if err := f.checkType('D'); err != nil {
+		return d, err
+	}
 	var err error
 	buf := f.fieldBuf(recordBuf)
 
@@ -166,6 +182,9 @@ func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
 }
 
 func (f *field) intFieldValue(recordBuf []byte) (int64, error) {
+	if err := f.checkType('N'); err != nil {
+		return 0, err
+	}
 	buf := f.fieldBuf(recordBuf)
 	if f.Dec != 0 {
 		buf = buf[:len(buf)-int(f.Dec)-1]
@@ -178,6 +197,9 @@ func (f *field) intFieldValue(recordBuf []byte) (int64, error) {
 }
 
 func (f *field) floatFieldValue(recordBuf []byte) (float64, error) {
+	if err := f.checkType('N'); err != nil {
+		return 0, err
+	}
 	buf := f.fieldBuf(recordBuf)
 	s := trimLeft(buf)
 	if s == "" {
@@ -193,6 +215,9 @@ func (f *field) setFieldBuf(recordBuf []byte, value string) {
 }
 
 func (f *field) setStringFieldValue(recordBuf []byte, value string, encoder *encoding.Encoder) error {
+	if err := f.checkType('C'); err != nil {
+		return err
+	}
 	var err error
 	s := value
 	if encoder != nil && !isASCII(s) {
@@ -210,6 +235,9 @@ func (f *field) setStringFieldValue(recordBuf []byte, value string, encoder *enc
 }
 
 func (f *field) setBoolFieldValue(recordBuf []byte, value bool) error {
+	if err := f.checkType('L'); err != nil {
+		return err
+	}
 	s := "F"
 	if value {
 		s = "T"
@@ -219,12 +247,18 @@ func (f *field) setBoolFieldValue(recordBuf []byte, value bool) error {
 }
 
 func (f *field) setDateFieldValue(recordBuf []byte, value time.Time) error {
+	if err := f.checkType('D'); err != nil {
+		return err
+	}
 	s := value.Format("20060102")
 	f.setFieldBuf(recordBuf, s)
 	return nil
 }
 
 func (f *field) setIntFieldValue(recordBuf []byte, value int64) error {
+	if err := f.checkType('N'); err != nil {
+		return err
+	}
 	s := strconv.FormatInt(value, 10)
 	if f.Dec > 0 {
 		s += "." + strings.Repeat("0", int(f.Dec))
@@ -238,6 +272,9 @@ func (f *field) setIntFieldValue(recordBuf []byte, value int64) error {
 }
 
 func (f *field) setFloatFieldValue(recordBuf []byte, value float64) error {
+	if err := f.checkType('N'); err != nil {
+		return err
+	}
 	s := strconv.FormatFloat(value, 'f', int(f.Dec), 64)
 	if err := f.checkLen(s); err != nil {
 		return err

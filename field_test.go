@@ -438,3 +438,11 @@ func Test_field_floatFieldValue(t *testing.T) {
 		}
 	}
 }
+
+func Test_field_check_type(t *testing.T) {
+	f, _ := newNumericField("name", 8, 2)
+
+	if _, err := f.dateFieldValue(nil); err == nil {
+		t.Errorf("field check type: error requered")
+	}
+}
