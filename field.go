@@ -53,7 +53,7 @@ func newDateField(name string) (*field, error) {
 
 func newCharacterField(name string, length int) (*field, error) {
 	if length <= 0 || length > maxCharacterLen {
-		return nil, fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxCharacterLen)
+		return nil, fmt.Errorf("field len %d, want 0 < len <= %d", length, maxCharacterLen)
 	}
 	f := &field{}
 	if err := f.setName(name); err != nil {
@@ -66,16 +66,16 @@ func newCharacterField(name string, length int) (*field, error) {
 
 func newNumericField(name string, length, dec int) (*field, error) {
 	if length <= 0 || length > maxNumericLen {
-		return nil, fmt.Errorf("invalid field len: got %d, want 0 < len <= %d", length, maxNumericLen)
+		return nil, fmt.Errorf("field len %d, want 0 < len <= %d", length, maxNumericLen)
 	}
 	if dec < 0 {
-		return nil, fmt.Errorf("invalid field dec: got %d, want dec > 0", dec)
+		return nil, fmt.Errorf("field dec %d, want dec > 0", dec)
 	}
 	if length <= 2 && dec > 0 {
-		return nil, fmt.Errorf("invalid field dec: got %d, want 0", dec)
+		return nil, fmt.Errorf("field dec %d, want 0", dec)
 	}
 	if length > 2 && (dec > length-2) {
-		return nil, fmt.Errorf("invalid field dec: got %d, want dec <= %d", dec, length-2)
+		return nil, fmt.Errorf("field dec %d, want dec <= %d", dec, length-2)
 	}
 	f := &field{}
 	if err := f.setName(name); err != nil {
@@ -130,7 +130,7 @@ func (f *field) checkLen(value string) error {
 
 func (f *field) checkType(t byte) error {
 	if t != f.Type {
-		return fmt.Errorf("field type: want: %q, got %q", t, f.Type)
+		return fmt.Errorf("field type %q, want: %q", f.Type, t)
 	}
 	return nil
 }
@@ -174,7 +174,6 @@ func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
 	}
 	var err error
 	buf := f.fieldBuf(recordBuf)
-
 	if isEmpty(buf) {
 		return d, err
 	}
