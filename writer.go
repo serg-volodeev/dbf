@@ -93,8 +93,15 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 		return nil, err
 	}
 	w.buf = make([]byte, int(w.header.RecSize))
-	w.buf[0] = ' ' // deleted mark
+	w.clearBuf()
+	// w.buf[0] = ' ' // deleted mark
 	return w, nil
+}
+
+func (w *Writer) clearBuf() {
+	for i := range w.buf {
+		w.buf[i] = ' '
+	}
 }
 
 // Err returns the first error that was encountered by the Writer.
@@ -143,6 +150,18 @@ func (w *Writer) flush() error {
 		return err
 	}
 	return nil
+}
+
+// SetDeleted sets record mark is deleted.
+func (w *Writer) SetDeteted(deleted bool) {
+	if w.err != nil {
+		return
+	}
+	if deleted {
+		w.buf[0] = '*'
+	} else {
+		w.buf[0] = ' '
+	}
 }
 
 // SetStringFieldValue assigns a value to a field by index.

@@ -123,6 +123,7 @@ func (f *Fields) FieldInfo(index int) (name, typ string, length, dec int) {
 	}
 	if err := f.checkFieldIndex(index); err != nil {
 		f.err = fmt.Errorf("FieldInfo: %w", err)
+		return
 	}
 	item := f.items[index]
 	name = item.name()

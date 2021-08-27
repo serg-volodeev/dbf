@@ -104,6 +104,15 @@ func (r *Reader) CodePage() int {
 	return r.header.codePage()
 }
 
+// ModDate returns the modified date in the file header.
+func (r *Reader) ModDate() time.Time {
+	if r.err != nil {
+		var d time.Time
+		return d
+	}
+	return r.header.modDate()
+}
+
 // RecordCount returns the number of records in the DBF file.
 func (r *Reader) RecordCount() uint32 {
 	if r.err != nil {
@@ -134,6 +143,14 @@ func (r *Reader) Read() bool {
 		return false
 	}
 	return true
+}
+
+// Deleted returns deleted record flag.
+func (r *Reader) Deleted() bool {
+	if r.err != nil {
+		return false
+	}
+	return r.buf[0] == '*'
 }
 
 // StringFieldValue returns the value of the field by index.
