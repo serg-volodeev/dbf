@@ -32,39 +32,45 @@ type field struct {
 // New field
 
 func newLogicalField(name string) (*field, error) {
-	f := &field{}
-	if err := f.setName(name); err != nil {
+	if err := checkName(name); err != nil {
 		return nil, err
 	}
+	f := &field{}
+	f.setName(name)
 	f.Type = 'L'
 	f.Len = 1
 	return f, nil
 }
 
 func newDateField(name string) (*field, error) {
-	f := &field{}
-	if err := f.setName(name); err != nil {
+	if err := checkName(name); err != nil {
 		return nil, err
 	}
+	f := &field{}
+	f.setName(name)
 	f.Type = 'D'
 	f.Len = 8
 	return f, nil
 }
 
 func newCharacterField(name string, length int) (*field, error) {
+	if err := checkName(name); err != nil {
+		return nil, err
+	}
 	if length <= 0 || length > maxCharacterLen {
 		return nil, fmt.Errorf("field len %d, want 0 < len <= %d", length, maxCharacterLen)
 	}
 	f := &field{}
-	if err := f.setName(name); err != nil {
-		return nil, err
-	}
+	f.setName(name)
 	f.Type = 'C'
 	f.Len = byte(length)
 	return f, nil
 }
 
 func newNumericField(name string, length, dec int) (*field, error) {
+	if err := checkName(name); err != nil {
+		return nil, err
+	}
 	if length <= 0 || length > maxNumericLen {
 		return nil, fmt.Errorf("field len %d, want 0 < len <= %d", length, maxNumericLen)
 	}
@@ -78,9 +84,7 @@ func newNumericField(name string, length, dec int) (*field, error) {
 		return nil, fmt.Errorf("field dec %d, want dec <= %d", dec, length-2)
 	}
 	f := &field{}
-	if err := f.setName(name); err != nil {
-		return nil, err
-	}
+	f.setName(name)
 	f.Type = 'N'
 	f.Len = byte(length)
 	f.Dec = byte(dec)
@@ -89,21 +93,25 @@ func newNumericField(name string, length, dec int) (*field, error) {
 
 // Field name
 
+func checkName(name string) error {
+	name = strings.TrimSpace(name)
+	if len(name) == 0 {
+		return fmt.Errorf("empty field name")
+	}
+	if len(name) > maxNameLen {
+		return fmt.Errorf("too long field name %q, max len %d", name, maxNameLen)
+	}
+	return nil
+}
+
 func (f *field) name() string {
 	i := bytes.IndexByte(f.Name[:], 0)
 	return string(f.Name[:i])
 }
 
-func (f *field) setName(name string) error {
+func (f *field) setName(name string) {
 	name = strings.ToUpper(strings.TrimSpace(name))
-	if len(name) == 0 {
-		return fmt.Errorf("empty field name")
-	}
-	if len(name) > maxNameLen {
-		return fmt.Errorf("too long field name: %q, max len %d", name, maxNameLen)
-	}
 	copy(f.Name[:], name)
-	return nil
 }
 
 // Read/write
