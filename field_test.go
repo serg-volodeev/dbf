@@ -178,6 +178,94 @@ func Test_field_setStringFieldValue(t *testing.T) {
 	}
 }
 
+func Test_field_setStringFieldValue_L(t *testing.T) {
+	f, _ := newLogicalField("name")
+
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{value: "F", want: "F"},
+		{value: "true", want: "T"},
+		{value: "", want: " "},
+		{value: "    ", want: " "},
+	}
+	for _, tc := range tests {
+		buf := []byte("x")
+		f.setStringFieldValue(buf, tc.value, nil)
+
+		if tc.want != string(buf) {
+			t.Errorf("field.setStringFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
+		}
+	}
+}
+
+func Test_field_setStringFieldValue_D(t *testing.T) {
+	f, _ := newDateField("name")
+
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{value: "20210830", want: "20210830"},
+		{value: "", want: "        "},
+		{value: "   ", want: "        "},
+		{value: "abc", want: "xxxxxxxx"},
+	}
+	for _, tc := range tests {
+		buf := []byte("xxxxxxxx")
+		f.setStringFieldValue(buf, tc.value, nil)
+
+		if tc.want != string(buf) {
+			t.Errorf("field.setStringFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
+		}
+	}
+}
+
+func Test_field_setStringFieldValue_N_int(t *testing.T) {
+	f, _ := newNumericField("name", 5, 0)
+
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{value: " 123 ", want: "  123"},
+		{value: "", want: "    0"},
+		{value: "-12", want: "  -12"},
+		{value: "12.34", want: "xxxxx"},
+	}
+	for _, tc := range tests {
+		buf := []byte("xxxxx")
+		f.setStringFieldValue(buf, tc.value, nil)
+
+		if tc.want != string(buf) {
+			t.Errorf("field.setStringFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
+		}
+	}
+}
+
+func Test_field_setStringFieldValue_N_float(t *testing.T) {
+	f, _ := newNumericField("name", 8, 2)
+
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{value: " 123.4 ", want: "  123.40"},
+		{value: "", want: "    0.00"},
+		{value: "-12", want: "  -12.00"},
+		{value: "abc", want: "xxxxxxxx"},
+	}
+	for _, tc := range tests {
+		buf := []byte("xxxxxxxx")
+		f.setStringFieldValue(buf, tc.value, nil)
+
+		if tc.want != string(buf) {
+			t.Errorf("field.setStringFieldValue(%#v): want: %#v, got: %#v", tc.value, tc.want, string(buf))
+		}
+	}
+}
+
 func Test_field_setBoolFieldValue(t *testing.T) {
 	f, _ := newLogicalField("name")
 
@@ -304,6 +392,63 @@ func Test_field_stringFieldValue(t *testing.T) {
 		if tc.isErr != gotErr {
 			t.Errorf("field.stringFieldValue(%#v): want error: %v, got error: %v", string(tc.buf), tc.isErr, gotErr)
 		}
+		if tc.want != got {
+			t.Errorf("field.stringFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
+		}
+	}
+}
+
+func Test_field_stringFieldValue_L(t *testing.T) {
+	f, _ := newLogicalField("name")
+
+	tests := []struct {
+		buf  []byte
+		want string
+	}{
+		{buf: []byte("T"), want: "T"},
+		{buf: []byte("F"), want: "F"},
+		{buf: []byte(" "), want: ""},
+	}
+	for _, tc := range tests {
+		got, _ := f.stringFieldValue(tc.buf, nil)
+		if tc.want != got {
+			t.Errorf("field.stringFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
+		}
+	}
+}
+
+func Test_field_stringFieldValue_D(t *testing.T) {
+	f, _ := newDateField("name")
+
+	tests := []struct {
+		buf  []byte
+		want string
+	}{
+		{buf: []byte("20210830"), want: "20210830"},
+		{buf: []byte("        "), want: ""},
+	}
+	for _, tc := range tests {
+		got, _ := f.stringFieldValue(tc.buf, nil)
+		if tc.want != got {
+			t.Errorf("field.stringFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
+		}
+	}
+}
+
+func Test_field_stringFieldValue_N(t *testing.T) {
+	f, _ := newNumericField("name", 8, 2)
+
+	tests := []struct {
+		buf  []byte
+		want string
+	}{
+		{buf: []byte("  123.45"), want: "123.45"},
+		{buf: []byte(" -123.00"), want: "-123.00"},
+		{buf: []byte("    0.00"), want: "0.00"},
+		{buf: []byte("        "), want: ""},
+	}
+	for _, tc := range tests {
+		got, _ := f.stringFieldValue(tc.buf, nil)
 		if tc.want != got {
 			t.Errorf("field.stringFieldValue(%#v): want: %#v, got: %#v", string(tc.buf), tc.want, got)
 		}

@@ -150,19 +150,22 @@ func (f *field) fieldBuf(recordBuf []byte) []byte {
 }
 
 func (f *field) stringFieldValue(recordBuf []byte, decoder *encoding.Decoder) (string, error) {
-	if err := f.checkType('C'); err != nil {
-		return "", err
-	}
-	var err error
 	buf := f.fieldBuf(recordBuf)
-	s := trimRight(buf)
-	if decoder != nil && !isASCII(s) {
-		s, err = decoder.String(s)
-		if err != nil {
-			return "", err
+	switch f.Type {
+	case 'C':
+		var err error
+		s := trimRight(buf)
+		if decoder != nil && !isASCII(s) {
+			s, err = decoder.String(s)
+			if err != nil {
+				return "", err
+			}
 		}
+		return s, nil
+	case 'L', 'D', 'N':
+		return trimLeft(buf), nil
 	}
-	return s, nil
+	return "", fmt.Errorf("unknow type %q, want 'C', 'L', 'D', 'N'", f.Type)
 }
 
 func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
@@ -170,9 +173,11 @@ func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
 		return false, err
 	}
 	buf := f.fieldBuf(recordBuf)
-	b := buf[0]
-	result := (b == 'T' || b == 't' || b == 'Y' || b == 'y')
-	return result, nil
+	switch buf[0] {
+	case 'T', 't', 'Y', 'y':
+		return true, nil
+	}
+	return false, nil
 }
 
 func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
@@ -222,22 +227,66 @@ func (f *field) setFieldBuf(recordBuf []byte, value string) {
 }
 
 func (f *field) setStringFieldValue(recordBuf []byte, value string, encoder *encoding.Encoder) error {
-	if err := f.checkType('C'); err != nil {
-		return err
-	}
-	var err error
-	s := value
-	if encoder != nil && !isASCII(s) {
-		s, err = encoder.String(s)
-		if err != nil {
+	switch f.Type {
+	case 'C':
+		var err error
+		s := value
+		if encoder != nil && !isASCII(s) {
+			s, err = encoder.String(s)
+			if err != nil {
+				return err
+			}
+		}
+		if err := f.checkLen(s); err != nil {
 			return err
 		}
+		s = padRight(s, int(f.Len))
+		f.setFieldBuf(recordBuf, s)
+	case 'L':
+		s := strings.TrimSpace(value)
+		if s == "" {
+			s = " "
+		} else {
+			switch s[0] {
+			case 'T', 't', 'Y', 'y':
+				s = "T"
+			default:
+				s = "F"
+			}
+		}
+		f.setFieldBuf(recordBuf, s)
+	case 'D':
+		s := strings.TrimSpace(value)
+		if s == "" {
+			s = strings.Repeat(" ", int(f.Len))
+		} else {
+			_, err := time.Parse("20060102", s)
+			if err != nil {
+				return err
+			}
+		}
+		f.setFieldBuf(recordBuf, s)
+	case 'N':
+		s := strings.TrimSpace(value)
+		if s == "" {
+			s = "0"
+		}
+		if f.Dec == 0 {
+			n, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return err
+			}
+			return f.setIntFieldValue(recordBuf, n)
+		} else {
+			n, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return err
+			}
+			return f.setFloatFieldValue(recordBuf, n)
+		}
+	default:
+		return fmt.Errorf("unknow type %q, want 'C', 'L', 'D', 'N'", f.Type)
 	}
-	if err := f.checkLen(s); err != nil {
-		return err
-	}
-	s = padRight(s, int(f.Len))
-	f.setFieldBuf(recordBuf, s)
 	return nil
 }
 

@@ -165,7 +165,7 @@ func (w *Writer) SetDeteted(deleted bool) {
 }
 
 // SetStringFieldValue assigns a value to a field by index.
-// Field type must be Character.
+// Field type must be Character, Logical, Date or Numeric.
 func (w *Writer) SetStringFieldValue(index int, value string) {
 	if w.err != nil {
 		return

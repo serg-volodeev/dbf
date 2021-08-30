@@ -154,7 +154,7 @@ func (r *Reader) Deleted() bool {
 }
 
 // StringFieldValue returns the value of the field by index.
-// Field type must be Character.
+// Field type must be Character, Date, Logical or Numeric.
 func (r *Reader) StringFieldValue(index int) string {
 	if r.err != nil {
 		return ""
