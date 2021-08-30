@@ -155,7 +155,7 @@ func (f *Fields) read(r io.Reader, count int) error {
 
 func (f *Fields) checkFieldIndex(index int) error {
 	if index < 0 || index >= f.Count() {
-		return fmt.Errorf("field index %d out of range", index)
+		return fmt.Errorf("field index out of range [%d] with field count %d", index, f.Count())
 	}
 	return nil
 }
