@@ -177,9 +177,8 @@ func (f *Fields) boolFieldValue(index int, recordBuf []byte) (bool, error) {
 }
 
 func (f *Fields) dateFieldValue(index int, recordBuf []byte) (time.Time, error) {
-	var d time.Time
 	if err := f.checkFieldIndex(index); err != nil {
-		return d, err
+		return time.Time{}, err
 	}
 	return f.items[index].dateFieldValue(recordBuf)
 }

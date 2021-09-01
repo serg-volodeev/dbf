@@ -484,7 +484,7 @@ func Test_field_dateFieldValue(t *testing.T) {
 	f, _ := newDateField("name")
 
 	d1 := time.Date(2021, 7, 27, 0, 0, 0, 0, time.UTC)
-	var d2 time.Time
+	d2 := time.Time{}
 
 	tests := []struct {
 		buf   []byte

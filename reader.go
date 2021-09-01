@@ -107,8 +107,7 @@ func (r *Reader) CodePage() int {
 // ModDate returns the modified date in the file header.
 func (r *Reader) ModDate() time.Time {
 	if r.err != nil {
-		var d time.Time
-		return d
+		return time.Time{}
 	}
 	return r.header.modDate()
 }
@@ -182,9 +181,8 @@ func (r *Reader) BoolFieldValue(index int) bool {
 // DateFieldValue returns the value of the field by index.
 // Field type must be Date.
 func (r *Reader) DateFieldValue(index int) time.Time {
-	var d time.Time
 	if r.err != nil {
-		return d
+		return time.Time{}
 	}
 	value, err := r.fields.dateFieldValue(index, r.buf)
 	if err != nil {

@@ -129,7 +129,7 @@ func Test_Reader_Read_record_blank(t *testing.T) {
 	if r.FloatFieldValue(3) != 0 {
 		t.Errorf("Read(): r.FloatFieldValue(3): want: %#v, got: %#v", 0, r.FloatFieldValue(3))
 	}
-	var d time.Time
+	d := time.Time{}
 	if r.DateFieldValue(4) != d {
 		t.Errorf("Read(): r.DateFieldValue(4): want: %#v, got: %#v", d, r.DateFieldValue(4))
 	}
@@ -151,7 +151,7 @@ func Test_Reader_Read_records(t *testing.T) {
 		t.Errorf("NewReader(): r.RecordCount(): want: %v, got: %v", 3, r.RecordCount())
 	}
 
-	var d time.Time
+	d := time.Time{}
 	d1 := time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
 
 	testRecords := []struct {

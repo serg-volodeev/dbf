@@ -181,14 +181,12 @@ func (f *field) boolFieldValue(recordBuf []byte) (bool, error) {
 }
 
 func (f *field) dateFieldValue(recordBuf []byte) (time.Time, error) {
-	var d time.Time
 	if err := f.checkType('D'); err != nil {
-		return d, err
+		return time.Time{}, err
 	}
-	var err error
 	buf := f.fieldBuf(recordBuf)
 	if isEmpty(buf) {
-		return d, err
+		return time.Time{}, nil
 	}
 	return time.Parse("20060102", string(buf))
 }

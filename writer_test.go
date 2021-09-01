@@ -55,7 +55,7 @@ func Test_Writer_write_records(t *testing.T) {
 		t.Errorf("NewWriter(): %v", err)
 	}
 
-	var d time.Time
+	d := time.Time{}
 	d1 := time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC)
 
 	records := []struct {
