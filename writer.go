@@ -27,7 +27,7 @@ type Writer struct {
 	err      error
 }
 
-// NewWriter returns a new Writer that writes to w.
+// NewWriter returns a new Writer that writes to ws.
 // The function writes the header of the DBF file.
 // If you call the Flash method afterwards, an empty file will be created.
 //
@@ -48,17 +48,14 @@ type Writer struct {
 //     1253  - Greek Windows
 //
 // If the codePage parameter is zero, the text fields will not be encoded.
-func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error) {
-	w, err := newWriter(ws, fields, codePage)
-	if err != nil {
-		return nil, fmt.Errorf("dbf.NewWriter: %w", err)
-	}
-	return w, nil
-}
-
-func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error) {
-	if _, ok := ws.(io.WriteSeeker); !ok {
-		return nil, fmt.Errorf("parameter %v is not io.WriteSeeker", ws)
+func NewWriter(ws io.WriteSeeker, fields *Fields, codePage int) (w *Writer, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("dbf.NewWriter: %w", err)
+		}
+	}()
+	if ws == nil {
+		return nil, fmt.Errorf("parameter is nil")
 	}
 	if fields.err != nil {
 		return nil, fields.err
@@ -66,7 +63,7 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	if fields.Count() == 0 {
 		return nil, fmt.Errorf("no fields defined")
 	}
-	w := &Writer{
+	w = &Writer{
 		header: newHeader(),
 		fields: fields,
 		ws:     ws,
@@ -83,18 +80,17 @@ func newWriter(ws io.WriteSeeker, fields *Fields, codePage int) (*Writer, error)
 	w.header.setFieldCount(w.fields.Count())
 	w.header.RecSize = uint16(w.fields.recSize)
 
-	if err := w.header.write(w.writer); err != nil {
+	if err = w.header.write(w.writer); err != nil {
 		return nil, err
 	}
-	if err := w.fields.write(w.writer); err != nil {
+	if err = w.fields.write(w.writer); err != nil {
 		return nil, err
 	}
-	if err := w.writer.WriteByte(headerEnd); err != nil {
+	if err = w.writer.WriteByte(headerEnd); err != nil {
 		return nil, err
 	}
 	w.buf = make([]byte, int(w.header.RecSize))
 	w.clearBuf()
-	// w.buf[0] = ' ' // deleted mark
 	return w, nil
 }
 

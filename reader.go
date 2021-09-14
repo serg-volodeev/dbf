@@ -20,32 +20,29 @@ type Reader struct {
 	err     error
 }
 
-// NewReader returns a new Reader that reads from r.
-func NewReader(rd io.Reader) (*Reader, error) {
-	r, err := newReader(rd)
-	if err != nil {
-		return nil, fmt.Errorf("dbf.NewReader: %w", err)
+// NewReader returns a new Reader that reads from rd.
+func NewReader(rd io.Reader) (r *Reader, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("dbf.NewReader: %w", err)
+		}
+	}()
+	if rd == nil {
+		return nil, fmt.Errorf("parameter is nil")
 	}
-	return r, nil
-}
-
-func newReader(rd io.Reader) (*Reader, error) {
-	if _, ok := rd.(io.Reader); !ok {
-		return nil, fmt.Errorf("parameter %v is not io.Reader", rd)
-	}
-	r := &Reader{
+	r = &Reader{
 		header: &header{},
 		fields: NewFields(),
 		reader: bufio.NewReader(rd),
 	}
-	if err := r.header.read(r.reader); err != nil {
+	if err = r.header.read(r.reader); err != nil {
 		return nil, err
 	}
-	if err := r.fields.read(r.reader, r.header.fieldCount()); err != nil {
+	if err = r.fields.read(r.reader, r.header.fieldCount()); err != nil {
 		return nil, err
 	}
 	// Skip byte header end
-	if _, err := r.reader.Discard(1); err != nil {
+	if _, err = r.reader.Discard(1); err != nil {
 		return nil, err
 	}
 	// Create buffer
